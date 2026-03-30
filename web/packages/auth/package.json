@@ -1,0 +1,13 @@
+{
+  "name": "@clients/auth",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@clients/shared": "workspace:*",
+    "@clients/types": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

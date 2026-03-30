@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@clients/auth": ["packages/auth/src/index.ts"],
+      "@clients/request": ["packages/request/src/index.ts"],
+      "@clients/shared": ["packages/shared/src/index.ts"],
+      "@clients/types": ["packages/types/src/index.ts"],
+      "@clients/ui": ["packages/ui/src/index.ts"]
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@clients/web-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev:user-platform": "pnpm --filter @clients/app-user-platform dev",
+    "dev:go-note": "pnpm --filter @clients/app-go-note dev",
+    "dev:go-chat": "pnpm --filter @clients/app-go-chat dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "type-check": "pnpm -r --if-present type-check"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@clients/app-go-chat",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node -e \"console.log('clients/web/apps/go-chat scaffold is ready; business pages can be added after shared packages settle.')\"",
+    "build": "node -e \"console.log('No build yet: go-chat has not been implemented.')\"",
+    "lint": "node -e \"console.log('No lint target yet: app scaffold only.')\"",
+    "type-check": "node -e \"console.log('No type-check target yet: app scaffold only.')\""
+  }
+}
