@@ -43,7 +43,7 @@ async function requestProfile<T>(path: string, init: RequestInit, token: string)
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
       ...(init.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(init.headers ?? {}),
+      ...init.headers,
     },
   })
 
