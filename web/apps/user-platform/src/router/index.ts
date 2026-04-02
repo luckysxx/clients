@@ -44,6 +44,19 @@ router.beforeEach((to) => {
     isAuthenticated: authStore.isAuthenticated,
     authRoute: '/login',
     authenticatedRoute: '/account',
+    allowGuestOnlyWhenAuthenticated: (target) => {
+      if (!target.meta?.guestOnly) {
+        return false
+      }
+
+      try {
+        const parsed = new URL(target.fullPath, window.location.origin)
+        const redirectUri = parsed.searchParams.get('redirect_uri') || ''
+        return redirectUri.length > 0
+      } catch {
+        return false
+      }
+    },
   })
 })
 

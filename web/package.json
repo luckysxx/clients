@@ -12,6 +12,7 @@
     "dev:go-chat": "pnpm --filter @clients/app-go-chat dev",
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
+    "lint:ci": "pnpm -r --if-present lint:ci",
     "type-check": "pnpm -r --if-present type-check"
   }
 }

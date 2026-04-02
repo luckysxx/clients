@@ -78,7 +78,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getSnippet, type Snippet } from '@/api/paste'
+import { getSnippet, type Snippet } from '@/api/snippet'
 import { ElMessage } from 'element-plus'
 import { CopyDocument, Edit } from '@element-plus/icons-vue'
 import hljs from 'highlight.js/lib/core'

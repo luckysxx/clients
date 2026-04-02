@@ -9,11 +9,18 @@ export interface AuthGuardDecision {
   query?: Record<string, string>
 }
 
+export interface AuthGuardContext {
+  path: string
+  fullPath: string
+  meta?: Record<string, unknown>
+}
+
 interface ResolveAuthGuardOptions {
   to: AuthGuardTarget
   isAuthenticated: boolean
   authRoute?: string
   authenticatedRoute?: string
+  allowGuestOnlyWhenAuthenticated?: (to: AuthGuardContext) => boolean
 }
 
 export function resolveAuthRouteAccess(options: ResolveAuthGuardOptions): true | AuthGuardDecision {
@@ -32,6 +39,10 @@ export function resolveAuthRouteAccess(options: ResolveAuthGuardOptions): true |
   }
 
   if (guestOnly && options.isAuthenticated) {
+    if (options.allowGuestOnlyWhenAuthenticated?.(options.to)) {
+      return true
+    }
+
     return {
       path: authenticatedRoute,
     }

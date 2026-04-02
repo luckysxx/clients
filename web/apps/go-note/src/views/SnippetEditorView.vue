@@ -66,7 +66,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { createSnippet, getSnippet, updateSnippet } from '@/api/paste'
+import { createSnippet, getSnippet, updateSnippet } from '@/api/snippet'
 
 const route = useRoute()
 const router = useRouter()
