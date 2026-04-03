@@ -57,6 +57,16 @@ const ssoContext = computed(() => {
 
 const postLoginRedirect = computed(() => normalizeInternalPath(getSingleQueryValue(route.query.redirect), '/account'))
 
+function createDeviceId(): string {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID()
+  }
+
+  const timePart = Date.now().toString(36)
+  const randomPart = Math.random().toString(36).slice(2, 12)
+  return `device-${timePart}-${randomPart}`
+}
+
 function buildRedirectTarget(payload: {
   userId: number
   username: string
@@ -106,7 +116,7 @@ const handleLogin = async () => {
     // 生成或复用浏览器端的设备指纹，作为 device_id
     let deviceId = localStorage.getItem('device_id')
     if (!deviceId) {
-      deviceId = crypto.randomUUID()
+      deviceId = createDeviceId()
       localStorage.setItem('device_id', deviceId)
     }
 
