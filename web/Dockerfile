@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ======== 阶段 1：依赖安装 ========
-FROM node:22-alpine AS deps
+FROM docker.m.daocloud.io/library/node:22-alpine AS deps
 
 # 启用 corepack 内置的 pnpm（无需额外安装）
 RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
@@ -22,9 +22,9 @@ COPY packages/auth/package.json      packages/auth/
 COPY packages/shared/package.json    packages/shared/
 COPY packages/request/package.json   packages/request/
 
-# 安装全部依赖（利用 Docker BuildKit 缓存 pnpm store）
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+# 安装全部依赖
+# 这里不用 BuildKit 的 cache mount，兼容服务器上当前的 Docker 构建器。
+RUN pnpm install --frozen-lockfile
 
 # ======== 阶段 2：构建指定 App ========
 FROM deps AS builder
@@ -32,9 +32,13 @@ FROM deps AS builder
 # 通过构建参数选择要构建的 app（默认 user-platform）
 ARG APP_NAME=user-platform
 ARG VITE_API_BASE_URL=
+ARG VITE_SSO_LOGIN_URL=
+ARG VITE_USER_PLATFORM_URL=
 
 # Vite 在构建时会把 VITE_ 前缀的环境变量注入到客户端代码中
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_SSO_LOGIN_URL=${VITE_SSO_LOGIN_URL}
+ENV VITE_USER_PLATFORM_URL=${VITE_USER_PLATFORM_URL}
 
 WORKDIR /app
 
@@ -45,7 +49,7 @@ COPY . .
 RUN pnpm --filter @clients/app-${APP_NAME}... run build
 
 # ======== 阶段 3：生产镜像（仅 Nginx + 静态文件）========
-FROM nginx:stable-alpine AS production
+FROM docker.m.daocloud.io/library/nginx:stable-alpine AS production
 
 # 安全加固：移除默认页面
 RUN rm -rf /usr/share/nginx/html/*

@@ -69,8 +69,12 @@ jobs:
         include:
           - app_name: user-platform
             image: clients-user-platform-web
+            vite_sso_login_url: ""
+            vite_user_platform_url: ""
           - app_name: go-note
             image: clients-go-note-web
+            vite_sso_login_url: http://app.go-project.local/login
+            vite_user_platform_url: http://app.go-project.local
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -106,6 +110,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             APP_NAME=${{ matrix.app_name }}
+            VITE_SSO_LOGIN_URL=${{ matrix.vite_sso_login_url }}
+            VITE_USER_PLATFORM_URL=${{ matrix.vite_user_platform_url }}
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
