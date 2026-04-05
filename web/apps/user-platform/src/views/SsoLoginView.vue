@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { normalizeInternalPath } from '@clients/shared'
 
-import { loginBySso } from '@/api/sso'
+import { loginBySso, refreshBySso } from '@/api/sso'
 import { useAuthStore } from '@/stores/auth'
 
 const loginForm = reactive({
@@ -15,9 +15,29 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const isSubmitting = ref(false)
+const isRedirecting = ref(false)
+const showAccountPicker = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const DEFAULT_APP_CODE = import.meta.env.VITE_DEFAULT_APP_CODE?.trim() || 'go-note'
+
+/**
+ * 客户端 JWT 过期检查（仅解码 payload 读 exp，不做签名校验）
+ * bufferSeconds: 提前多少秒判定过期，避免在传输过程中刚好过期
+ */
+function isTokenExpired(token: string, bufferSeconds = 30): boolean {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return true
+    const payloadPart = parts[1]
+    if (!payloadPart) return true
+    const payload = JSON.parse(atob(payloadPart))
+    if (!payload.exp) return true
+    return payload.exp * 1000 < Date.now() + bufferSeconds * 1000
+  } catch {
+    return true
+  }
+}
 
 function getSingleQueryValue(value: unknown): string {
   if (Array.isArray(value)) {
@@ -154,6 +174,59 @@ const handleLogin = async () => {
   }
 }
 
+/**
+ * 以当前已登录账号继续：确保 access token 有效后跳回下游应用
+ */
+const handleContinueAsCurrentUser = async () => {
+  if (!authStore.user) return
+
+  isRedirecting.value = true
+  errorMessage.value = ''
+
+  let accessToken = authStore.token
+  let refreshToken = authStore.refreshToken
+
+  // 如果 access token 已过期，尝试用 refresh token 续签
+  if (isTokenExpired(accessToken)) {
+    if (!refreshToken) {
+      authStore.clearAuth()
+      showAccountPicker.value = false
+      isRedirecting.value = false
+      return
+    }
+
+    try {
+      const result = await refreshBySso(refreshToken)
+      accessToken = result.access_token
+      refreshToken = result.refresh_token
+      authStore.updateTokens(accessToken, refreshToken)
+    } catch {
+      // refresh 失败，清除登录态，切换到登录表单
+      authStore.clearAuth()
+      showAccountPicker.value = false
+      isRedirecting.value = false
+      errorMessage.value = '登录态已失效，请重新登录'
+      return
+    }
+  }
+
+  const target = buildRedirectTarget({
+    userId: authStore.user.id,
+    username: authStore.user.username,
+    accessToken,
+    refreshToken,
+  })
+  window.location.replace(target)
+}
+
+/**
+ * 切换到登录表单（使用其他账号）
+ * 不清除当前登录态 — 用户登录新账号时 setAuth 会覆盖
+ */
+const handleSwitchAccount = () => {
+  showAccountPicker.value = false
+}
+
 onMounted(() => {
   authStore.initFromStorage()
 
@@ -161,14 +234,9 @@ onMounted(() => {
     return
   }
 
+  // 已登录 + 有 SSO 上下文 → 显示账号选择，不自动跳转
   if (ssoContext.value.canRedirect) {
-    const target = buildRedirectTarget({
-      userId: authStore.user.id,
-      username: authStore.user.username,
-      accessToken: authStore.token,
-      refreshToken: authStore.refreshToken,
-    })
-    window.location.replace(target)
+    showAccountPicker.value = true
     return
   }
 })
@@ -208,7 +276,37 @@ const goToAccountCenter = () => {
         <span class="mist mist-b" />
       </div>
 
-      <section class="auth-card">
+      <!-- 账号选择卡片：已登录 + SSO 上下文时显示 -->
+      <section v-if="showAccountPicker" class="auth-card">
+        <h1>选择账号</h1>
+        <p class="sub-title">继续前往 {{ ssoContext.effectiveAppCode }}</p>
+
+        <div class="account-picker">
+          <div class="account-grid">
+            <button
+              type="button"
+              class="account-card"
+              :disabled="isRedirecting"
+              @click="handleContinueAsCurrentUser"
+            >
+              <div class="account-avatar">{{ authStore.user?.username?.slice(0, 1).toUpperCase() }}</div>
+              <p class="account-name">{{ authStore.user?.username }}</p>
+            </button>
+          </div>
+
+          <p v-if="isRedirecting" class="form-message success">跳转中...</p>
+          <p v-if="errorMessage" class="form-message error">{{ errorMessage }}</p>
+
+          <p class="switch-auth">
+            <button type="button" class="switch-link-btn" @click="handleSwitchAccount">
+              使用其他账号登录
+            </button>
+          </p>
+        </div>
+      </section>
+
+      <!-- 登录表单：未登录或选择切换账号时显示 -->
+      <section v-else class="auth-card">
         <h1>欢迎登录 luckys</h1>
         <p class="sub-title">账号中心与统一身份入口</p>
 
@@ -234,6 +332,19 @@ const goToAccountCenter = () => {
           <p class="switch-auth">
             没有账号？
             <RouterLink class="switch-link" :to="{ name: 'sso-register', query: route.query }">去注册</RouterLink>
+          </p>
+
+          <!-- 已登录账号快捷入口 -->
+          <p v-if="ssoContext.canRedirect" class="switch-auth account-switch-hint">
+            <button
+              v-if="authStore.isAuthenticated"
+              type="button"
+              class="switch-link-btn"
+              @click="showAccountPicker = true"
+            >
+              使用已登录账号
+            </button>
+            <span v-else class="no-account-hint">目前没有已登录账号</span>
           </p>
         </form>
       </section>
@@ -630,6 +741,115 @@ const goToAccountCenter = () => {
 .switch-link {
   color: #116fb4;
   text-decoration: none;
+}
+
+/* ── 账号选择器 ── */
+.account-picker {
+  margin-top: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.account-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+}
+
+.account-card {
+  width: 96px;
+  padding: 18px 8px 14px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(173, 193, 209, 0.45);
+  background: linear-gradient(180deg, rgba(250, 253, 255, 0.94), rgba(239, 246, 251, 0.76));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease;
+}
+
+.account-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(20, 146, 236, 0.55);
+  box-shadow: 0 8px 20px rgba(20, 146, 236, 0.14);
+}
+
+.account-card:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
+}
+
+.account-card .account-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 1.2rem;
+}
+
+.account-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #5f2a4a;
+  background: linear-gradient(135deg, #ffd8b0 0%, #f8b4d9 100%);
+  flex-shrink: 0;
+}
+
+.account-card .account-name {
+  font-size: 0.82rem;
+  text-align: center;
+  word-break: break-all;
+}
+
+
+
+.account-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-hint {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: #13673a;
+}
+
+.switch-link-btn {
+  border: none;
+  background: transparent;
+  color: #116fb4;
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.switch-link-btn:hover {
+  color: #103b63;
+}
+
+.account-switch-hint {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(173, 193, 209, 0.3);
+}
+
+.no-account-hint {
+  color: #98a2b3;
+  font-size: 0.82rem;
 }
 
 @keyframes float-a {

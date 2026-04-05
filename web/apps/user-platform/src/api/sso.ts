@@ -33,3 +33,14 @@ export function registerBySso(payload: RegisterRequest): Promise<RegisterRespons
 export function loginBySso(payload: LoginRequest): Promise<LoginResponse> {
   return postJson<LoginRequest, LoginResponse>('/api/v1/users/login', payload)
 }
+
+export interface RefreshResponse {
+  access_token: string
+  refresh_token: string
+}
+
+export function refreshBySso(refreshToken: string): Promise<RefreshResponse> {
+  return postJson<{ refresh_token: string }, RefreshResponse>('/api/v1/users/refresh', {
+    refresh_token: refreshToken,
+  })
+}

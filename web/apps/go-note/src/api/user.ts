@@ -166,7 +166,7 @@ export const refreshToken = (refreshToken: string) => {
 export const logout = async (accessToken: string) => {
   const response = await axios.post<LogoutEnvelope>(
     '/api/v1/users/logout',
-    {},
+    { device_id: getOrCreateDeviceID() },
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
