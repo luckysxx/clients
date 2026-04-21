@@ -3,10 +3,34 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
-    "dev": "node -e \"console.log('clients/web/apps/go-chat scaffold is ready; business pages can be added after shared packages settle.')\"",
-    "build": "node -e \"console.log('No build yet: go-chat has not been implemented.')\"",
-    "lint": "node -e \"console.log('No lint target yet: app scaffold only.')\"",
-    "type-check": "node -e \"console.log('No type-check target yet: app scaffold only.')\""
+    "dev": "vite",
+    "build": "run-s type-check build-only",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build"
+  },
+  "dependencies": {
+    "@clients/auth": "workspace:*",
+    "@clients/request": "workspace:*",
+    "@clients/shared": "workspace:*",
+    "@clients/types": "workspace:*",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.29",
+    "vue-router": "^5.0.4"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^24.11.0",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "@vue/tsconfig": "^0.8.1",
+    "npm-run-all2": "^8.0.4",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-vue-devtools": "^8.0.6",
+    "vue-tsc": "^3.2.5"
   }
 }

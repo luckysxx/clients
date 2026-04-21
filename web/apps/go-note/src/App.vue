@@ -1,206 +1,364 @@
 <template>
-  <div class="app-shell">
-    <div v-if="showWorkspaceShell" class="workspace-shell">
-      <aside class="workspace-sidebar">
-        <div class="sidebar-top">
-          <button class="sidebar-menu" type="button" @click="handlePlaceholderAction('工作区导航')">
-            <el-icon><Operation /></el-icon>
+  <div class="min-h-screen">
+    <div v-if="showWorkspaceShell" class="flex min-h-screen bg-transparent">
+      <aside
+        class="app-scrollbar fixed inset-y-0 left-0 z-30 flex shrink-0 flex-col overflow-y-auto overflow-x-hidden whitespace-nowrap border-r border-[rgba(0,0,0,0.1)] bg-[#f6f5f4] px-3 py-3 text-[rgba(0,0,0,0.95)] transition-all duration-200 ease-in-out"
+        :class="sidebarCollapsed ? 'w-16' : 'w-57.5'"
+      >
+        <div class="mb-5 flex" :class="sidebarCollapsed ? 'items-center justify-center' : 'items-center gap-2'">
+          <button type="button" class="ui-icon-button" @click="sidebarCollapsed = !sidebarCollapsed">
+            <PanelLeftClose v-if="!sidebarCollapsed" class="h-4 w-4" />
+            <PanelLeftOpen v-else class="h-4 w-4" />
           </button>
-          <button class="brand" type="button" @click="router.push('/')">
-            <span class="brand-mark">
-              <span class="brand-mark__leaf"></span>
-            </span>
-            <span class="brand-text">GoNote 文档</span>
+
+          <button
+            v-show="!sidebarCollapsed"
+            type="button"
+            class="flex min-w-0 flex-1 items-center gap-2 rounded px-2 py-1.5 text-left transition-colors duration-150 hover:bg-[rgba(0,0,0,0.05)]"
+            @click="handleBrandClick"
+          >
+            <div class="flex shrink-0 h-6 w-6 items-center justify-center rounded text-[rgba(0,0,0,0.95)]">
+              <NotebookPen class="h-5 w-5" />
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-[14px] font-[600] text-[rgba(0,0,0,0.95)]">GoNote</p>
+            </div>
           </button>
         </div>
 
-        <div class="sidebar-search">
-          <el-input
-            v-model="workspaceKeyword"
-            placeholder="搜索文档"
-            clearable
-            @input="handleWorkspaceSearch"
-            @clear="handleWorkspaceSearch"
+        <div v-if="!sidebarCollapsed" class="mb-4 flex items-center gap-1.5">
+          <button
+            type="button"
+            class="group relative flex h-8 flex-1 items-center gap-2 rounded-md border border-transparent bg-[rgba(0,0,0,0.04)] px-2.5 text-left text-[13px] transition-all duration-150 hover:bg-[rgba(0,0,0,0.06)] outline-none"
+            @click="openCommandPalette"
           >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
+            <Search class="h-3.5 w-3.5 text-[#a39e98]" />
+            <span class="flex-1 font-[400] text-[#a39e98] group-hover:text-[#615d59]">搜索</span>
+            <span class="text-[11px] font-[500] text-[#a39e98] tracking-widest opacity-70 group-hover:opacity-100 transition-opacity mr-0.5">⌘ K</span>
+          </button>
+
+          <DropdownMenuRoot>
+            <DropdownMenuTrigger as-child>
+              <button
+                type="button"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent bg-[rgba(0,0,0,0.04)] text-[#a39e98] transition-all duration-150 hover:bg-[rgba(0,0,0,0.06)] hover:text-[rgba(0,0,0,0.95)] outline-none"
+              >
+                <Plus class="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent align="end" :side-offset="4" class="ui-dropdown-content min-w-44 z-50">
+                <DropdownMenuItem class="ui-dropdown-item" @select="router.push('/snippets/new')">
+                  <FileText class="h-4 w-4 text-[#a39e98]" />
+                  <span>新建空白文档</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem class="ui-dropdown-item" @select="workspaceStore.templateDialogOpen = true">
+                  <LayoutTemplate class="h-4 w-4 text-[#a39e98]" />
+                  <span>从模板创建</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem class="ui-dropdown-item" @select="groupDialogOpen = true">
+                  <FolderPlus class="h-4 w-4 text-[#a39e98]" />
+                  <span>新建分组</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
         </div>
 
-        <nav class="sidebar-nav">
-          <button
-            v-for="item in primaryNav"
-            :key="item.label"
-            type="button"
-            class="nav-item"
-            :class="{ 'is-active': isRouteActive(item.path) }"
-            @click="router.push(item.path)"
-          >
-            <el-icon><component :is="item.icon" /></el-icon>
-            <span>{{ item.label }}</span>
-          </button>
-        </nav>
-
-        <section class="sidebar-group">
-          <p class="group-title">置顶文档</p>
-          <button
-            v-for="doc in pinnedDocs"
-            :key="doc.title"
-            type="button"
-            class="doc-shortcut"
-            @click="handlePlaceholderAction(doc.title)"
-          >
-            <el-icon><Document /></el-icon>
-            <span>{{ doc.title }}</span>
-          </button>
-        </section>
-
-        <section class="sidebar-group">
-          <div class="group-header">
-            <p class="group-title">我的文档库</p>
-            <button type="button" class="icon-button subtle" @click="router.push('/snippets/new')">
-              <el-icon><Plus /></el-icon>
+        <section class="mb-5 space-y-2">
+          <div v-show="!sidebarCollapsed" class="flex items-center justify-between px-2">
+            <p class="text-[11px] font-[600] text-[#a39e98]">Workspace</p>
+            <button type="button" class="rounded p-1 text-[#a39e98] transition-colors hover:bg-[rgba(0,0,0,0.08)] hover:text-[rgba(0,0,0,0.95)]" @click="handleAllDocs">
+              <Library class="h-3.5 w-3.5" />
             </button>
           </div>
-          <button type="button" class="doc-creator" @click="router.push('/snippets/new')">
-            <el-icon><EditPen /></el-icon>
-            <span>新建文档</span>
-          </button>
+
+          <div class="space-y-1" :class="sidebarCollapsed ? 'flex flex-col items-center gap-2' : ''">
+            <button
+              v-for="item in primaryNav"
+              :key="item.label"
+              type="button"
+              class="flex items-center transition-all duration-150"
+              :class="[
+                isRouteActive(item.path) && (item.path !== '/workspace' || workspaceStore.activeGroupId == null) ? 'bg-[rgba(0,0,0,0.05)] font-[500] text-[rgba(0,0,0,0.95)]' : 'text-[#615d59] hover:bg-[rgba(0,0,0,0.05)] hover:text-[rgba(0,0,0,0.95)]',
+                sidebarCollapsed ? 'justify-center h-8 w-8 rounded px-0' : 'w-full justify-between rounded-[4px] px-2 py-1 text-[14px]'
+              ]"
+              :title="sidebarCollapsed ? item.label : ''"
+              @click="item.path === '/workspace' ? handleAllDocs() : router.push(item.path)"
+            >
+              <span class="inline-flex items-center gap-2">
+                <component :is="item.icon" :class="sidebarCollapsed ? 'h-4 w-4' : 'h-4 w-4 text-[#a39e98] group-hover:text-[#615d59]'" />
+                <template v-if="!sidebarCollapsed">{{ item.label }}</template>
+              </span>
+              <span v-if="!sidebarCollapsed && item.label === '全部文档'" class="group-tree-count">{{ workspaceStore.groups.length }}</span>
+            </button>
+          </div>
         </section>
 
-        <div class="sidebar-footer">
-          <button type="button" class="footer-tool" @click="router.push('/about')">
-            <el-icon><InfoFilled /></el-icon>
-            <span>关于</span>
-          </button>
-          <button
-            v-if="isAuthenticated"
-            type="button"
-            class="footer-tool"
-            @click="handleLogout"
-          >
-            <el-icon><SwitchButton /></el-icon>
-            <span>退出</span>
-          </button>
-          <button v-else type="button" class="footer-tool" @click="router.push('/auth')">
-            <el-icon><UserFilled /></el-icon>
-            <span>登录</span>
-          </button>
-        </div>
+        <section v-if="!sidebarCollapsed" class="mb-5 space-y-2">
+          <div class="flex items-center justify-between px-2">
+            <p class="text-[11px] font-[600] text-[#a39e98]">Groups</p>
+            <DialogRoot v-model:open="groupDialogOpen">
+              <DialogTrigger as-child>
+                <button type="button" class="rounded p-1 text-[#a39e98] transition-colors hover:bg-[rgba(0,0,0,0.08)] hover:text-[rgba(0,0,0,0.95)]">
+                  <Plus class="h-3.5 w-3.5" />
+                </button>
+              </DialogTrigger>
+              <DialogPortal>
+                <DialogOverlay class="dialog-overlay" />
+                <DialogContent class="dialog-content">
+                  <DialogTitle class="text-lg font-semibold text-[rgba(0,0,0,0.95)]">新建分组</DialogTitle>
+                  <DialogDescription class="mt-1 text-sm text-[#615d59]">
+                    侧栏会立即刷新，新的分组可直接用于过滤文档。
+                  </DialogDescription>
+                  <div class="mt-5 space-y-4">
+                    <div>
+                      <label class="ui-label">分组名称</label>
+                      <input v-model="newGroupName" class="ui-input" placeholder="例如：后端笔记" @keydown.enter.prevent="submitCreateGroup" />
+                    </div>
+                    <div class="flex justify-end gap-2">
+                      <DialogClose as-child>
+                        <button type="button" class="ui-button ui-button-secondary">取消</button>
+                      </DialogClose>
+                      <button type="button" class="ui-button ui-button-primary" @click="submitCreateGroup">创建分组</button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </DialogPortal>
+            </DialogRoot>
+          </div>
+
+          <ul class="mb-1 space-y-1">
+            <li class="space-y-1">
+              <div
+                class="group-tree-button"
+                :class="{ 'group-tree-button-active': isSameId(workspaceStore.activeGroupId, 0) || isDragOverInbox }"
+                style="padding-left: 10px;"
+                @dragover.prevent="onDragOverInbox"
+                @dragleave="onDragLeaveInbox"
+                @drop="onDropSnippet"
+              >
+                <div class="flex min-w-0 flex-1 items-center gap-2">
+                  <span class="block w-4 shrink-0"></span>
+                  <button
+                    type="button"
+                    class="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    @click="handleGroupClick(0)"
+                  >
+                    <Inbox class="shrink-0 text-[#a39e98] h-4 w-4" />
+                    <span class="truncate text-left">Inbox / 收件箱</span>
+                  </button>
+                </div>
+              </div>
+            </li>
+          </ul>
+
+          <WorkspaceGroupTree :groups="groupTree" :active-id="workspaceStore.activeGroupId" @select="handleGroupClick" />
+        </section>
+
+
       </aside>
 
-      <section class="workspace-main">
-        <header class="workspace-topbar">
-          <div class="topbar-title">
-            <h1>{{ pageTitle }}</h1>
-            <p>{{ pageSubtitle }}</p>
-          </div>
+      <section class="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden transition-all duration-200 ease-in-out" :class="sidebarCollapsed ? 'pl-16' : 'pl-57.5'">
+        <header class="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-[rgba(0,0,0,0.1)] bg-white px-6">
+          <div class="mx-auto flex w-full max-w-none items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-1.5 text-[14px] text-[#615d59]">
+                <span v-for="crumb in breadcrumbs" :key="crumb" class="inline-flex items-center gap-1.5">
+                  <span>{{ crumb }}</span>
+                  <span v-if="crumb !== breadcrumbs[breadcrumbs.length - 1]" class="text-[#a39e98]">/</span>
+                </span>
+              </div>
+            </div>
 
-          <div class="topbar-actions">
-            <button
-              v-for="action in topbarActions"
-              :key="action.label"
-              type="button"
-              class="icon-button"
-              :aria-label="action.label"
-              @click="action.action"
-            >
-              <el-icon><component :is="action.icon" /></el-icon>
-            </button>
-
-            <button
-              class="profile-pill"
-              type="button"
-              @click="isAuthenticated ? handlePlaceholderAction('个人中心') : router.push('/auth')"
-            >
-              <el-avatar :size="40" class="profile-avatar">
-                {{ userInitial }}
-              </el-avatar>
-              <span class="profile-name">{{ authStore.user?.username || '游客' }}</span>
-              <el-icon class="profile-arrow"><ArrowDown /></el-icon>
-            </button>
+            <div class="flex items-center gap-2">
+              <DropdownMenuRoot v-if="isAuthenticated">
+                <DropdownMenuTrigger as-child>
+                  <button
+                    type="button"
+                    class="inline-flex h-8 items-center gap-2 rounded px-2 text-left outline-none transition-all duration-150 hover:bg-[rgba(0,0,0,0.05)]"
+                  >
+                    <span class="flex h-5 w-5 items-center justify-center rounded bg-[#0075de] text-[11px] font-[600] text-white">
+                      {{ userInitial }}
+                    </span>
+                    <span class="hidden text-[14px] font-[500] text-[rgba(0,0,0,0.95)] md:block">{{ authStore.user?.username }}</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuContent align="end" :side-offset="10" class="ui-dropdown-content min-w-45">
+                    <DropdownMenuItem class="ui-dropdown-item" @select="router.push('/about')">
+                      <Sparkles class="h-4 w-4" />
+                      关于 GoNote
+                    </DropdownMenuItem>
+                    <DropdownMenuItem class="ui-dropdown-item" @select="router.push('/settings')">
+                      <Settings2 class="h-4 w-4" />
+                      账户设置
+                    </DropdownMenuItem>
+                    <DropdownMenuItem class="ui-dropdown-item" @select="openPassportFromShell('login')">
+                      <Users class="h-4 w-4" />
+                      切换账号
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator class="ui-dropdown-separator" />
+                    <DropdownMenuItem class="ui-dropdown-item text-red-600 data-highlighted:bg-red-50 data-highlighted:text-red-700" @select="handleLogout">
+                      <LogOut class="h-4 w-4" />
+                      退出登录
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenuPortal>
+              </DropdownMenuRoot>
+              <button v-else type="button" class="ui-button ui-button-primary" @click="openPassportFromShell('register')">
+                登录 / 注册
+              </button>
+            </div>
           </div>
         </header>
 
-        <main class="workspace-content">
-          <router-view v-slot="{ Component }">
-            <transition name="fade" mode="out-in">
-              <component :is="Component" />
-            </transition>
-          </router-view>
+        <main class="flex-1 w-full bg-white overflow-hidden">
+            <router-view v-slot="{ Component }">
+              <transition name="fade" mode="out-in">
+                <component :is="Component" :key="route.path" />
+              </transition>
+            </router-view>
         </main>
       </section>
     </div>
 
-    <main v-else class="auth-shell">
+    <main v-else>
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
-          <component :is="Component" />
+          <component :is="Component" :key="route.fullPath" />
         </transition>
       </router-view>
     </main>
+
+    <UiConfirmDialogHost />
+    <UiToastViewport />
+    <CommandPalette />
+    <TemplateDialog v-model:open="workspaceStore.templateDialogOpen" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { buildAuthAppLoginPath } from '@clients/shared'
 import {
-  ArrowDown,
-  Document,
-  EditPen,
-  Grid,
-  House,
-  InfoFilled,
-  Operation,
+  ChevronRight,
+  Library,
+  LogOut,
+  NotebookPen,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelTop,
   Plus,
-  Reading,
   Search,
-  Share,
-  SwitchButton,
-  UserFilled,
-  Bell,
-  FolderOpened,
-} from '@element-plus/icons-vue'
+  Settings2,
+  Sparkles,
+  Users,
+  LayoutDashboard,
+  Star,
+  Trash2,
+  Inbox,
+  FileText,
+  FolderKanban,
+  FolderPlus,
+  FileEdit,
+  LayoutTemplate,
+  Home,
+} from 'lucide-vue-next'
+import { isSameId, parseRouteId } from '@clients/shared'
+import {
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogRoot,
+  DialogTitle,
+  DialogTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuRoot,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from 'radix-vue'
+import { moveSnippet } from '@/api/snippet'
 import { logout } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
+import { useWorkspaceStore } from '@/stores/workspace'
+import UiConfirmDialogHost from '@/components/ui/UiConfirmDialogHost.vue'
+import UiToastViewport from '@/components/ui/UiToastViewport.vue'
+import WorkspaceGroupTree from '@/components/WorkspaceGroupTree.vue'
+import CommandPalette from '@/components/CommandPalette.vue'
+import TemplateDialog from '@/components/workspace/TemplateDialog.vue'
+import { toast } from '@/composables/useToast'
+
+interface WorkspaceGroupInput {
+  id: number
+  parent_id?: number | null
+  name: string
+  snippet_count: number
+  children?: WorkspaceGroupInput[]
+}
+
+interface WorkspaceGroupNode {
+  id: number
+  parent_id?: number | null
+  name: string
+  snippet_count: number
+  children: WorkspaceGroupNode[]
+}
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-const workspaceKeyword = ref('')
+const workspaceStore = useWorkspaceStore()
 
-const isAuthenticated = computed(() => authStore.isAuthenticated)
-const showWorkspaceShell = computed(() => !['auth', 'sso-callback'].includes(String(route.name ?? '')))
-const userInitial = computed(() => authStore.user?.username?.slice(0, 1).toUpperCase() || 'G')
+const sidebarCollapsed = ref(false)
+const workspaceKeyword = ref('')
+const groupDialogOpen = ref(false)
+const newGroupName = ref('')
+
+const isDragOverInbox = ref(false)
+const onDragOverInbox = (e: DragEvent) => {
+  e.preventDefault()
+  if (e.dataTransfer?.types.includes('text/plain')) {
+    e.dataTransfer.dropEffect = 'move'
+    isDragOverInbox.value = true
+  }
+}
+const onDragLeaveInbox = () => {
+  isDragOverInbox.value = false
+}
+const onDropSnippet = async (e: DragEvent) => {
+  isDragOverInbox.value = false
+  const snippetIdStr = e.dataTransfer?.getData('text/plain')
+  if (!snippetIdStr) return
+
+  try {
+    await moveSnippet(snippetIdStr, { group_id: 0 })
+    toast.success('已移入收件箱')
+    window.dispatchEvent(new CustomEvent('snippet-moved'))
+  } catch {
+    toast.error('移动失败')
+  }
+}
 
 const primaryNav = [
-  { label: '主页', path: '/', icon: House },
-  {
-    label: '云盘',
-    path: '/snippets/new',
-    icon: FolderOpened,
-  },
-  {
-    label: '知识库',
-    path: '/about',
-    icon: Reading,
-  },
+  { label: '开始', path: '/workspace/start', icon: Home },
+  { label: '全部文档', path: '/workspace', icon: PanelTop },
+  { label: '知识分组', path: '/workspace/groups', icon: FolderKanban },
+  { label: '统一整理', path: '/workspace/organize', icon: LayoutDashboard },
+  { label: '我的收藏', path: '/workspace/favorites', icon: Star },
+  { label: '本地草稿', path: '/workspace/drafts', icon: FileEdit },
+  { label: '回收站', path: '/workspace/trash', icon: Trash2 },
 ]
 
-const pinnedDocs = [
-  { title: '@ GoNote 管理员，你的快速上手指南' },
-  { title: '开发约定与分享规范' },
-]
-
-const topbarActions = [
-  { label: '搜索', icon: Search, action: () => handlePlaceholderAction('全局搜索') },
-  { label: '分享', icon: Share, action: () => handlePlaceholderAction('分享工作区') },
-  { label: '消息', icon: Bell, action: () => handlePlaceholderAction('消息中心') },
-  { label: '应用', icon: Grid, action: () => handlePlaceholderAction('应用中心') },
-]
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const showWorkspaceShell = computed(() => !['landing'].includes(String(route.name ?? '')))
+const isWorkspaceImmersive = computed(() => route.name === 'workspace-organize')
+const userInitial = computed(() => authStore.user?.username?.slice(0, 1).toUpperCase() || 'G')
 
 const pageTitle = computed(() => {
   switch (route.name) {
@@ -211,63 +369,238 @@ const pageTitle = computed(() => {
     case 'snippet-detail':
       return '文档详情'
     case 'about':
-      return '关于'
+      return '关于 GoNote'
+    case 'settings':
+      return '账户设置'
+    case 'workspace-organize':
+      return '统一整理'
+    case 'workspace-start':
+      return '开始'
+    case 'workspace-groups':
+      return '知识分组'
+    case 'workspace-favorites':
+      return '我的收藏'
+    case 'workspace-drafts':
+      return '本地草稿箱'
+    case 'workspace-trash':
+      return '回收站'
     default:
-      return '主页'
+      return '知识工作台'
   }
 })
 
-const pageSubtitle = computed(() => {
-  switch (route.name) {
-    case 'snippet-new':
-      return '创建新的代码文档并保存到你的工作区。'
-    case 'snippet-edit':
-      return '继续完善已有文档内容。'
-    case 'snippet-detail':
-      return '查看文档内容、语言和更新时间。'
-    case 'about':
-      return '查看 GoNote 的产品定位和技术栈。'
-    default:
-      return '整理代码片段、快速打开最近内容。'
+const groupTree = computed<WorkspaceGroupNode[]>(() => buildGroupTree(workspaceStore.groups as WorkspaceGroupInput[]))
+const selectedWorkspaceTagIds = computed(() => {
+  const raw = typeof route.query.tag_ids === 'string'
+    ? route.query.tag_ids
+    : typeof route.query.tag_id === 'string'
+      ? route.query.tag_id
+      : ''
+
+  if (!raw) return []
+
+  return raw
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+})
+
+const breadcrumbs = computed(() => {
+  const base = ['GoNote']
+
+  if (route.name === 'workspace') {
+    if (isSameId(workspaceStore.activeGroupId, 0)) {
+      return [...base, '默认知识库', '文档列表']
+    }
+
+    if (workspaceStore.activeGroup?.name) {
+      return [...base, workspaceStore.activeGroup.name, '文档列表']
+    }
+
+    return [...base, '全部文档']
   }
+
+  if (route.name === 'snippet-new') {
+    return [...base, '创建文档']
+  }
+
+  if (route.name === 'snippet-edit') {
+    return [...base, '编辑文档']
+  }
+
+  if (route.name === 'snippet-detail') {
+    return [...base, '阅读文档']
+  }
+
+  if (route.name === 'settings') {
+    return [...base, '账户设置']
+  }
+
+  if (route.name === 'about') {
+    return [...base, '产品说明']
+  }
+
+  if (route.name === 'workspace-organize') {
+    return [...base, '统一整理']
+  }
+
+  if (route.name === 'workspace-start') {
+    return [...base, '开始']
+  }
+
+  if (route.name === 'workspace-groups') {
+    return [...base, '知识分组']
+  }
+
+  if (route.name === 'workspace-favorites') {
+    return [...base, '我的收藏']
+  }
+
+  if (route.name === 'workspace-drafts') {
+    return [...base, '本地草稿']
+  }
+
+  if (route.name === 'workspace-trash') {
+    return [...base, '回收站']
+  }
+
+  return base
 })
 
 const syncWorkspaceKeyword = () => {
   workspaceKeyword.value = typeof route.query.q === 'string' ? route.query.q : ''
 }
 
+const syncWorkspaceFilters = () => {
+  const routeGroupId = parseRouteId(route.query.group_id) as string | number | null
+  const routeTagId = parseRouteId(route.query.tag_id) as string | number | null
+  workspaceStore.selectGroup(routeGroupId)
+  workspaceStore.activeTagId = selectedWorkspaceTagIds.value[0] ?? routeTagId
+}
+
+const buildGroupTree = (groups: WorkspaceGroupInput[]) => {
+  if (!groups.length) return []
+
+  const normalizeNode = (group: WorkspaceGroupInput): WorkspaceGroupNode => ({
+    id: group.id,
+    parent_id: group.parent_id,
+    name: group.name,
+    snippet_count: group.snippet_count,
+    children: (group.children ?? []).map(normalizeNode),
+  })
+
+  if (groups.some((group) => Array.isArray(group.children))) {
+    return groups.filter((group) => !group.parent_id)
+      .map(normalizeNode)
+  }
+
+  const map = new Map<string, WorkspaceGroupNode & { children: WorkspaceGroupNode[] }>()
+  const roots: Array<WorkspaceGroupNode & { children: WorkspaceGroupNode[] }> = []
+
+  for (const group of groups) {
+    map.set(String(group.id), {
+      ...group,
+      children: [],
+    })
+  }
+
+  for (const group of map.values()) {
+    if (group.parent_id && map.has(String(group.parent_id))) {
+      map.get(String(group.parent_id))?.children.push(group)
+    } else {
+      roots.push(group)
+    }
+  }
+
+  return roots
+}
+
 const handleWorkspaceSearch = () => {
   const q = workspaceKeyword.value.trim()
   router.replace({
-    path: '/',
-    query: q ? { q } : {},
+    path: '/workspace',
+    query: {
+      ...route.query,
+      q: q || undefined,
+    },
+  })
+}
+
+const openCommandPalette = () => {
+  window.dispatchEvent(new CustomEvent('open-command-palette'))
+}
+
+const handleAllDocs = () => {
+  workspaceStore.selectGroup(null)
+  workspaceStore.selectTag(null)
+  router.push({
+    path: '/workspace',
+    query: {
+      q: typeof route.query.q === 'string' ? route.query.q : undefined,
+      tag_id: undefined,
+      tag_ids: undefined,
+    },
+  })
+}
+
+const handleGroupClick = (id: string | number) => {
+  router.push({
+    path: '/workspace',
+    query: {
+      q: typeof route.query.q === 'string' ? route.query.q : undefined,
+      group_id: String(id),
+      tag_id: undefined,
+    },
   })
 }
 
 const isRouteActive = (path: string) => {
-  if (path === '/') {
-    return route.path === '/'
+  if (path === '/workspace') {
+    return route.path === '/workspace'
   }
   return route.path.startsWith(path)
 }
 
-const handlePlaceholderAction = (label: string) => {
-  ElMessage.info(`${label} 功能正在接入`)
+const handleBrandClick = () => {
+  router.push(isAuthenticated.value ? '/workspace' : '/')
+}
+
+const openPassportFromShell = (intent: 'login' | 'register' = 'login') => {
+  authStore.clearSsoSuppression()
+  window.location.replace(buildAuthAppLoginPath({
+    appCode: 'go-note',
+    intent,
+    redirectPath: route.fullPath,
+  }))
+}
+
+const submitCreateGroup = async () => {
+  const name = newGroupName.value.trim()
+  if (!name) {
+    toast.warning('请输入分组名称')
+    return
+  }
+
+  await workspaceStore.addGroup({ name })
+  newGroupName.value = ''
+  groupDialogOpen.value = false
+  toast.success('分组已创建')
 }
 
 const handleLogout = async () => {
   const accessToken = authStore.token
+  authStore.suppressSsoAutoLogin()
 
   try {
     if (accessToken) {
       await logout(accessToken)
     }
   } catch (error) {
-    ElMessage.warning(error instanceof Error ? error.message : '退出接口调用失败，已清理本地登录态')
+    toast.warning(error instanceof Error ? error.message : '退出接口调用失败，已清理本地登录态')
   } finally {
     authStore.logout()
-    ElMessage.success('已退出登录')
-    router.push('/auth')
+    toast.success('已退出登录')
+    router.push('/')
   }
 }
 
@@ -275,399 +608,27 @@ watch(
   () => route.fullPath,
   () => {
     syncWorkspaceKeyword()
+    syncWorkspaceFilters()
   },
   { immediate: true },
 )
 
-onMounted(() => {
+onMounted(async () => {
+  window.addEventListener('open-group-dialog', () => { groupDialogOpen.value = true })
   authStore.initFromStorage()
+  await Promise.all([workspaceStore.fetchGroups(), workspaceStore.fetchTags()])
+  syncWorkspaceFilters()
 })
 </script>
 
-<style lang="scss">
-:root {
-  --app-bg: #f7f8fb;
-  --surface: #ffffff;
-  --surface-muted: #f3f5fa;
-  --surface-hover: #eef2ff;
-  --line: #e7ebf3;
-  --line-strong: #d7dfec;
-  --text-main: #1d2129;
-  --text-secondary: #667085;
-  --text-tertiary: #98a2b3;
-  --brand: #3662ec;
-  --brand-soft: #dfe7ff;
-  --brand-deep: #1d4ed8;
-  --orange-soft: #fff1e6;
-  --orange-main: #ff7d00;
-  --yellow-soft: #fff7da;
-  --yellow-main: #e6a400;
-  --shadow-shell: 0 20px 60px rgba(15, 23, 42, 0.08);
-  --shadow-card: 0 8px 30px rgba(31, 41, 55, 0.06);
-  --radius-card: 18px;
-  --radius-pill: 999px;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#app {
-  min-height: 100vh;
-}
-
-body {
-  margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(54, 98, 236, 0.08), transparent 24%),
-    linear-gradient(180deg, #fbfcff 0%, #f5f7fb 100%);
-  color: var(--text-main);
-  font-family:
-    'SF Pro Display',
-    'PingFang SC',
-    'Hiragino Sans GB',
-    'Microsoft YaHei',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
-.app-shell {
-  min-height: 100vh;
-}
-
-.workspace-shell {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 296px minmax(0, 1fr);
-}
-
-.workspace-sidebar {
-  padding: 18px 14px 14px;
-  border-right: 1px solid rgba(215, 223, 236, 0.85);
-  background: rgba(255, 255, 255, 0.74);
-  backdrop-filter: blur(20px);
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.sidebar-top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sidebar-menu,
-.brand,
-.nav-item,
-.doc-shortcut,
-.doc-creator,
-.footer-tool,
-.icon-button,
-.profile-pill {
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.sidebar-menu {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  transition: background-color 0.2s ease;
-}
-
-.sidebar-menu:hover,
-.icon-button:hover,
-.footer-tool:hover {
-  background: var(--surface-muted);
-}
-
-.brand {
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--text-main);
-}
-
-.brand-mark {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #4f7cff 0%, #3b82f6 52%, #14b8a6 100%);
-  position: relative;
-  box-shadow: 0 10px 24px rgba(54, 98, 236, 0.24);
-}
-
-.brand-mark__leaf {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px 10px 4px 10px;
-  background: rgba(255, 255, 255, 0.92);
-  transform: rotate(28deg);
-}
-
-.brand-text {
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-.sidebar-search :deep(.el-input__wrapper) {
-  min-height: 44px;
-  border-radius: 14px;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px rgba(231, 235, 243, 0.9);
-}
-
-.sidebar-nav,
-.sidebar-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.nav-item,
-.doc-shortcut,
-.doc-creator,
-.footer-tool {
-  min-height: 46px;
-  padding: 0 14px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--text-secondary);
-  transition:
-    background-color 0.18s ease,
-    color 0.18s ease,
-    transform 0.18s ease;
-}
-
-.nav-item:hover,
-.doc-shortcut:hover,
-.doc-creator:hover {
-  background: var(--surface-muted);
-  color: var(--text-main);
-  transform: translateX(2px);
-}
-
-.nav-item.is-active {
-  background: linear-gradient(180deg, #dfe8ff 0%, #d8e3ff 100%);
-  color: var(--brand);
-  font-weight: 700;
-}
-
-.group-title {
-  margin: 0;
-  padding: 6px 10px 2px;
-  color: var(--text-tertiary);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.group-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.doc-shortcut {
-  align-items: flex-start;
-  padding-top: 12px;
-  padding-bottom: 12px;
-  min-height: auto;
-  line-height: 1.45;
-  text-align: left;
-}
-
-.doc-creator {
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px rgba(231, 235, 243, 0.95);
-  color: var(--text-main);
-}
-
-.sidebar-footer {
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  display: flex;
-  gap: 10px;
-}
-
-.footer-tool {
-  flex: 1;
-  justify-content: center;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px rgba(231, 235, 243, 0.95);
-}
-
-.workspace-main {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.workspace-topbar {
-  min-height: 84px;
-  padding: 22px 28px 12px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.topbar-title h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.topbar-title p {
-  margin: 6px 0 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.icon-button {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  transition: background-color 0.18s ease;
-}
-
-.icon-button.subtle {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-}
-
-.profile-pill {
-  min-height: 44px;
-  padding: 4px 8px 4px 4px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--surface);
-  box-shadow:
-    0 10px 24px rgba(15, 23, 42, 0.05),
-    inset 0 0 0 1px rgba(231, 235, 243, 0.95);
-}
-
-.profile-avatar {
-  background: linear-gradient(135deg, #ffd8b0 0%, #f8b4d9 100%);
-  color: #5f2a4a;
-  font-weight: 700;
-}
-
-.profile-name {
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-main);
-  font-weight: 600;
-}
-
-.profile-arrow {
-  color: var(--text-tertiary);
-}
-
-.workspace-content {
-  flex: 1;
-  min-height: 0;
-  padding: 0 28px 28px;
-}
-
-.auth-shell {
-  min-height: 100vh;
-  width: 100%;
-}
-
-.auth-shell > * {
-  width: 100%;
-}
-
+<style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition:
-    opacity 0.24s ease,
-    transform 0.24s ease;
+  transition: opacity 0.12s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(8px);
-}
-
-@media (max-width: 1100px) {
-  .workspace-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .workspace-sidebar {
-    border-right: 0;
-    border-bottom: 1px solid rgba(215, 223, 236, 0.85);
-  }
-
-  .sidebar-footer {
-    margin-top: 0;
-  }
-}
-
-@media (max-width: 720px) {
-  .workspace-topbar {
-    padding: 18px 18px 10px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .workspace-content {
-    padding: 0 18px 18px;
-  }
-
-  .topbar-actions {
-    flex-wrap: wrap;
-  }
-
-  .profile-pill {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .sidebar-footer {
-    flex-direction: column;
-  }
 }
 </style>

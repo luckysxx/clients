@@ -13,7 +13,7 @@ WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 
 # 拷贝每个子包的 package.json（保持目录结构）
-COPY apps/user-platform/package.json apps/user-platform/
+COPY apps/auth/package.json          apps/auth/
 COPY apps/go-note/package.json       apps/go-note/
 COPY apps/go-chat/package.json       apps/go-chat/
 COPY packages/ui/package.json        packages/ui/
@@ -29,18 +29,13 @@ RUN pnpm install --frozen-lockfile
 # ======== 阶段 2：构建指定 App ========
 FROM deps AS builder
 
-# 通过构建参数选择要构建的 app（默认 user-platform）
-ARG APP_NAME=user-platform
+# 通过构建参数选择要构建的 app（默认 auth）
+ARG APP_NAME=auth
 ARG VITE_API_BASE_URL=
-ARG VITE_SSO_LOGIN_URL=
-ARG VITE_USER_PLATFORM_URL=
-ARG VITE_GO_NOTE_URL=
 
 # Vite 在构建时会把 VITE_ 前缀的环境变量注入到客户端代码中
+# 注：SSO / 跨应用 URL 已改由 api-gateway 运行时提供，不再需要构建时注入
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-ENV VITE_SSO_LOGIN_URL=${VITE_SSO_LOGIN_URL}
-ENV VITE_USER_PLATFORM_URL=${VITE_USER_PLATFORM_URL}
-ENV VITE_GO_NOTE_URL=${VITE_GO_NOTE_URL}
 
 WORKDIR /app
 
@@ -57,7 +52,7 @@ FROM docker.m.daocloud.io/library/nginx:stable-alpine AS production
 RUN rm -rf /usr/share/nginx/html/*
 
 # 通过构建参数决定复制哪个 app 的产物和 nginx 配置
-ARG APP_NAME=user-platform
+ARG APP_NAME=auth
 
 # 复制构建产物到 Nginx 静态目录
 COPY --from=builder /app/apps/${APP_NAME}/dist /usr/share/nginx/html

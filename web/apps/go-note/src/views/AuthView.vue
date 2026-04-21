@@ -11,99 +11,18 @@
       </header>
 
       <div class="form-stage">
-        <div class="login-card">
-          <div class="card-corner">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
+        <div class="passport-card">
+          <h1>欢迎使用 GoNote</h1>
+          <p class="card-desc">通过统一通行证登录后，继续进入你的文档、云盘与知识库。</p>
 
-          <div class="card-body">
-            <h1>欢迎使用 GoNote</h1>
-
-            <div class="login-tabs" role="tablist" aria-label="登录方式">
-              <button
-                v-for="tab in loginTabs"
-                :key="tab.value"
-                type="button"
-                class="login-tab"
-                :class="{ 'is-active': activeTab === tab.value }"
-                @click="activeTab = tab.value"
-              >
-                {{ tab.label }}
-              </button>
-            </div>
-
-            <el-form :model="loginForm" class="login-form" @submit.prevent>
-              <el-form-item class="form-item">
-                <el-input
-                  v-model="loginForm.account"
-                  :placeholder="activeTab === 'email' ? '请输入你的邮箱 / 用户名' : '请输入你的用户名'"
-                  size="large"
-                />
-              </el-form-item>
-
-              <el-form-item class="form-item">
-                <el-input
-                  v-model="loginForm.password"
-                  type="password"
-                  placeholder="请输入密码"
-                  size="large"
-                  show-password
-                  @keyup.enter="handleDirectLogin"
-                />
-              </el-form-item>
-
-              <el-button
-                type="primary"
-                class="submit-button"
-                size="large"
-                :loading="loginLoading"
-                :disabled="!canSubmit"
-                @click="handleDirectLogin"
-              >
-                登录
-              </el-button>
-            </el-form>
-
-            <label class="agreement">
-              <input v-model="agreedToTerms" type="checkbox" />
-              <span class="agreement-box"></span>
-              <span class="agreement-copy">
-                我已阅读并同意
-                <button type="button" class="text-link" @click="handlePlaceholderAction('服务协议')">
-                  服务协议
-                </button>
-                和
-                <button type="button" class="text-link" @click="handlePlaceholderAction('隐私政策')">
-                  隐私政策
-                </button>
-              </span>
-            </label>
-
-            <button type="button" class="switch-link" @click="handlePlaceholderAction('Lark 登录')">
-              切换至 Lark 登录
-            </button>
-
-            <div class="more-login">
-              <span class="divider-line"></span>
-              <span>更多登录方式</span>
-              <span class="divider-line"></span>
-            </div>
-
-            <button type="button" class="sso-button" @click="handleSsoLogin">
-              <span class="sso-icon">
-                <span></span>
-              </span>
-              <span>使用 SSO 登录</span>
+          <div class="cta-group">
+            <button type="button" class="cta-btn cta-btn--primary" @click="handleLogin">
+              <svg class="cta-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v14M3 10h14"/></svg>
+              登录 / 注册
             </button>
           </div>
-        </div>
 
-        <div class="register-row">
-          <span>还没有账号？</span>
-          <button type="button" class="text-link strong" @click="goToRegister">立即注册</button>
+          <p class="card-hint">点击按钮后将跳转到统一认证页面，登录后自动返回。</p>
         </div>
       </div>
 
@@ -120,47 +39,31 @@
         <div class="visual-cloud visual-cloud--2"></div>
 
         <div class="illustration">
-          <!-- Left round tree -->
           <div class="tree tree--left">
             <div class="tree-crown"></div>
             <div class="tree-shadow"></div>
           </div>
-
-          <!-- Ground bump under left tree -->
           <div class="ground-bump"></div>
-
-          <!-- Right tall tree -->
           <div class="tree tree--right">
             <div class="tree-crown"></div>
             <div class="tree-shadow"></div>
           </div>
 
-          <!-- House outline -->
           <svg class="house-outline" viewBox="0 0 340 300" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M170 18 L325 126 L325 290 L15 290 L15 126 Z"
                   stroke="rgba(255,255,255,0.85)" stroke-width="3" fill="rgba(255,255,255,0.12)" />
           </svg>
 
-          <!-- Interior elements -->
           <div class="house-interior">
-            <!-- Dome + silo -->
             <div class="geo-silo">
               <div class="geo-silo-dome"></div>
               <div class="geo-silo-body"></div>
             </div>
-
-            <!-- Blue circle -->
             <div class="geo-circle"></div>
-
-            <!-- Light blue triangle -->
             <div class="geo-triangle"></div>
-
-            <!-- Arch block -->
             <div class="geo-arch-block">
               <div class="geo-arch-cutout"></div>
             </div>
-
-            <!-- Bar chart -->
             <div class="geo-bars">
               <div class="geo-bar bar-1"></div>
               <div class="geo-bar bar-2"></div>
@@ -180,95 +83,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { buildAuthAppLoginPath } from '@clients/shared'
 import { useAuthStore } from '@/stores/auth'
-import { getOrCreateDeviceID, login } from '@/api/user'
-import { buildSsoLoginUrl } from '@/router'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-const loginLoading = ref(false)
-const activeTab = ref<'account' | 'email'>('email')
-const agreedToTerms = ref(true)
 
-const loginTabs = [
-  { label: '账号', value: 'account' as const },
-  { label: '邮箱', value: 'email' as const },
-]
-
-const loginForm = reactive({
-  account: '',
-  password: '',
-})
-
-const canSubmit = computed(() => {
-  return Boolean(loginForm.account.trim() && loginForm.password.trim() && agreedToTerms.value)
-})
-
-const USER_PLATFORM_URL = import.meta.env.VITE_USER_PLATFORM_URL || 'http://localhost:5173'
-
-const handlePlaceholderAction = (label: string) => {
-  ElMessage.info(`${label} 页面暂未接入`)
-}
-
-const handleDirectLogin = async () => {
-  if (!agreedToTerms.value) {
-    ElMessage.warning('请先同意服务协议和隐私政策')
-    return
-  }
-
-  if (!loginForm.account || !loginForm.password) {
-    ElMessage.warning('请填写完整的登录信息')
-    return
-  }
-
-  loginLoading.value = true
-  try {
-    const res = await login({
-      username: loginForm.account,
-      password: loginForm.password,
-      app_code: 'go-note',
-      device_id: getOrCreateDeviceID(),
-    })
-
-    authStore.setAuth(res.access_token, res.refresh_token, {
-      id: res.user_id,
-      username: res.username,
-      email: '',
-    })
-
-    ElMessage.success('登录成功！')
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
-    router.push(redirect)
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : '登录失败，请检查用户名和密码'
-    ElMessage.error(msg)
-  } finally {
-    loginLoading.value = false
-  }
-}
-
-const handleSsoLogin = () => {
-  if (!agreedToTerms.value) {
-    ElMessage.warning('请先同意服务协议和隐私政策')
-    return
-  }
-
-  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
-  window.location.href = buildSsoLoginUrl(redirect)
-}
-
-const goToRegister = () => {
-  window.open(`${USER_PLATFORM_URL}/register?app_code=go-note`, '_blank')
+const handleLogin = () => {
+  authStore.clearSsoSuppression()
+  window.location.replace(buildAuthAppLoginPath({
+    appCode: 'go-note',
+    redirectPath: typeof route.query.redirect === 'string' ? route.query.redirect : '/workspace',
+  }))
 }
 
 onMounted(() => {
   authStore.initFromStorage()
   if (authStore.isAuthenticated) {
-    router.replace('/')
+    router.replace('/workspace')
   }
 })
 </script>
@@ -345,267 +180,93 @@ onMounted(() => {
   gap: 22px;
 }
 
-.login-card {
-  width: min(100%, 468px);
-  min-height: 586px;
-  border-radius: 16px;
+/* ── Passport Card ── */
+
+.passport-card {
+  width: min(100%, 420px);
+  padding: 48px 40px;
+  border-radius: 12px;
   background: #fff;
-  border: 1px solid #dde4ef;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow:
-    0 18px 42px rgba(17, 24, 39, 0.07),
-    0 2px 6px rgba(17, 24, 39, 0.04);
-  position: relative;
-  overflow: hidden;
+    rgba(0,0,0,0.04) 0px 4px 18px,
+    rgba(0,0,0,0.027) 0px 2px 7.8px,
+    rgba(0,0,0,0.02) 0px 0.8px 2.9px,
+    rgba(0,0,0,0.01) 0px 0.175px 1px;
+  text-align: center;
 }
 
-.card-corner {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 86px;
-  height: 86px;
-  background: linear-gradient(135deg, #7fa4ff 0%, #5c87f6 100%);
-  clip-path: polygon(100% 0, 0 0, 100% 100%);
-  display: grid;
-  grid-template-columns: repeat(2, 10px);
-  gap: 6px;
-  justify-content: end;
-  align-content: start;
-  padding: 14px 10px 0 0;
-}
-
-.card-corner span {
-  width: 10px;
-  height: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.92);
-  border-radius: 3px;
-}
-
-.card-body {
-  display: flex;
-  flex-direction: column;
-  padding: 38px 34px 26px;
-}
-
-.card-body h1 {
-  margin: 0 0 18px;
+.passport-card h1 {
+  margin: 0 0 12px;
   font-size: 22px;
-  line-height: 1.2;
-  font-weight: 800;
-  color: #1f2937;
-}
-
-.login-tabs {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 16px;
-}
-
-.login-tab {
-  border: 0;
-  background: transparent;
-  padding: 0 0 8px;
-  color: #6b7280;
-  font-size: 15px;
+  line-height: 1.27;
   font-weight: 700;
-  border-bottom: 3px solid transparent;
-  cursor: pointer;
+  letter-spacing: -0.25px;
+  color: rgba(0, 0, 0, 0.95);
 }
 
-.login-tab.is-active {
-  color: #306cff;
-  border-bottom-color: #306cff;
+.card-desc {
+  margin: 0 0 32px;
+  color: #615d59;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
-.login-form {
+.cta-group {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.form-item {
-  margin-bottom: 0;
-}
-
-.login-form :deep(.el-input__wrapper) {
-  min-height: 46px;
-  border-radius: 10px;
-  padding: 0 14px;
-  box-shadow: inset 0 0 0 1px #d8e1ef;
-}
-
-.login-form :deep(.el-input__wrapper.is-focus) {
-  box-shadow: inset 0 0 0 1px #3b6cf6;
-}
-
-.login-form :deep(.el-input__inner) {
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 4px;
   font-size: 15px;
-}
-
-.submit-button {
-  width: 100%;
-  height: 47px;
-  margin-top: 4px;
-  border-radius: 10px;
-  border: 0;
-  background: linear-gradient(180deg, #4e83ff 0%, #306cff 100%);
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.submit-button.is-disabled,
-.submit-button:disabled {
-  background: #c5cad3;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.agreement {
-  margin-top: 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  font-weight: 600;
   cursor: pointer;
-  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.agreement input {
-  display: none;
-}
-
-.agreement-box {
-  width: 22px;
-  height: 22px;
-  margin-top: 1px;
-  border-radius: 6px;
-  background: #fff;
-  box-shadow: inset 0 0 0 1px #c7d2e3;
-  position: relative;
-  flex-shrink: 0;
-}
-
-.agreement input:checked + .agreement-box {
-  background: #3b6cf6;
-  box-shadow: inset 0 0 0 1px #3b6cf6;
-}
-
-.agreement input:checked + .agreement-box::after {
-  content: '';
-  position: absolute;
-  left: 7px;
-  top: 4px;
-  width: 5px;
-  height: 9px;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.agreement-copy {
-  color: #586174;
-  font-size: 13px;
-  line-height: 1.65;
-}
-
-.text-link {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: #306cff;
-  font: inherit;
-  cursor: pointer;
-}
-
-.text-link.strong {
-  font-weight: 700;
-}
-
-.switch-link {
-  margin-top: 8px;
-  align-self: flex-start;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: #306cff;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.more-login {
-  margin-top: 106px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  color: #8a94a8;
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.divider-line {
-  flex: 1;
-  height: 1px;
-  background: #e7eaf0;
-}
-
-.sso-button {
-  margin-top: 14px;
-  width: 100%;
-  height: 47px;
-  border-radius: 10px;
-  border: 1px solid #d7dfec;
-  background: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #1f2937;
-  cursor: pointer;
-  transition:
-    border-color 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.sso-button:hover {
-  border-color: #9acb91;
+.cta-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 24px rgba(35, 145, 51, 0.08);
 }
 
-.sso-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2px solid #39a845;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.cta-btn--primary {
+  color: #fff;
+  background: #0075de;
+  box-shadow: none;
 }
 
-.sso-icon span {
-  width: 13px;
-  height: 10px;
-  border-radius: 10px 10px 8px 8px;
-  border: 2px solid #39a845;
-  border-top-color: transparent;
+.cta-btn--primary:hover {
+  background: #005bab;
+  box-shadow: none;
 }
 
-.register-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #677184;
-  font-size: 14px;
+.cta-icon {
+  width: 18px;
+  height: 18px;
 }
+
+.card-hint {
+  margin: 20px 0 0;
+  color: #a39e98;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ── Locale Row ── */
 
 .locale-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #667085;
+  color: #615d59;
   font-size: 13px;
 }
 
@@ -613,7 +274,7 @@ onMounted(() => {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid #98a2b3;
+  border: 2px solid #a39e98;
   position: relative;
 }
 
@@ -625,7 +286,7 @@ onMounted(() => {
   top: 50%;
   transform: translate(-50%, -50%);
   border-radius: 999px;
-  border: 1px solid #98a2b3;
+  border: 1px solid #a39e98;
 }
 
 .locale-globe::before {
@@ -637,6 +298,8 @@ onMounted(() => {
   width: 18px;
   height: 8px;
 }
+
+/* ── Visual Panel ── */
 
 .auth-panel--visual {
   background: linear-gradient(180deg, #e8ecf8 0%, #dfe4f4 40%, #e4e8f6 100%);
@@ -696,7 +359,6 @@ onMounted(() => {
   justify-content: center;
 }
 
-/* ── Trees ── */
 .tree {
   position: absolute;
   bottom: 0;
@@ -746,7 +408,6 @@ onMounted(() => {
   margin-top: -4px;
 }
 
-/* ── Ground ── */
 .ground-bump {
   position: absolute;
   left: -10px;
@@ -758,7 +419,6 @@ onMounted(() => {
   z-index: 3;
 }
 
-/* ── House outline (SVG) ── */
 .house-outline {
   position: absolute;
   left: 50%;
@@ -770,7 +430,6 @@ onMounted(() => {
   pointer-events: none;
 }
 
-/* ── House interior elements ── */
 .house-interior {
   position: absolute;
   left: 50%;
@@ -781,7 +440,6 @@ onMounted(() => {
   z-index: 5;
 }
 
-/* Silo (dome + rectangular body) */
 .geo-silo {
   position: absolute;
   left: 50%;
@@ -806,7 +464,6 @@ onMounted(() => {
   background: #bcc2cc;
 }
 
-/* Blue circle */
 .geo-circle {
   position: absolute;
   left: 50px;
@@ -818,7 +475,6 @@ onMounted(() => {
   z-index: 1;
 }
 
-/* Light blue triangle */
 .geo-triangle {
   position: absolute;
   left: 30px;
@@ -831,7 +487,6 @@ onMounted(() => {
   z-index: 1;
 }
 
-/* Arch block (castle-like block with arch cutout) */
 .geo-arch-block {
   position: absolute;
   left: 18px;
@@ -853,7 +508,6 @@ onMounted(() => {
   background: #dfe4f0;
 }
 
-/* Bar chart */
 .geo-bars {
   position: absolute;
   right: 16px;
@@ -869,25 +523,10 @@ onMounted(() => {
   border-radius: 1px;
 }
 
-.bar-1 {
-  height: 78px;
-  background: #cde534;
-}
-
-.bar-2 {
-  height: 130px;
-  background: #a8d840;
-}
-
-.bar-3 {
-  height: 158px;
-  background: #5dbd3e;
-}
-
-.bar-4 {
-  height: 118px;
-  background: #3da534;
-}
+.bar-1 { height: 78px; background: #cde534; }
+.bar-2 { height: 130px; background: #a8d840; }
+.bar-3 { height: 158px; background: #5dbd3e; }
+.bar-4 { height: 118px; background: #3da534; }
 
 .visual-copy {
   margin-top: 24px;
@@ -907,18 +546,11 @@ onMounted(() => {
   font-size: 15px;
 }
 
+/* ── Responsive ── */
+
 @media (max-width: 1320px) {
   .auth-page {
     grid-template-columns: minmax(560px, 6.5fr) minmax(320px, 3.5fr);
-  }
-
-  .login-card {
-    width: min(100%, 450px);
-    min-height: 560px;
-  }
-
-  .card-body {
-    padding: 34px 28px 24px;
   }
 
   .illustration {
@@ -941,47 +573,15 @@ onMounted(() => {
   .auth-panel--form {
     padding: 24px 18px 20px;
   }
-
-  .login-card {
-    min-height: auto;
-    width: min(100%, 520px);
-  }
-
-  .more-login {
-    margin-top: 72px;
-  }
 }
 
 @media (max-width: 640px) {
-  .card-body {
-    padding: 36px 22px 28px;
+  .passport-card {
+    padding: 36px 24px;
   }
 
-  .card-body h1 {
+  .passport-card h1 {
     font-size: 22px;
-  }
-
-  .login-tabs {
-    gap: 20px;
-  }
-
-  .login-tab {
-    font-size: 16px;
-  }
-
-  .submit-button,
-  .sso-button {
-    height: 48px;
-    font-size: 16px;
-  }
-
-  .register-row,
-  .locale-row {
-    font-size: 15px;
-  }
-
-  .more-login {
-    margin-top: 56px;
   }
 }
 </style>

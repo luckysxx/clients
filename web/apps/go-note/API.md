@@ -159,7 +159,6 @@
     "title": "JWT middleware",
     "content": "package main\n...",
     "language": "go",
-    "visibility": "private",
     "created_at": "2026-03-31T10:00:00+08:00",
     "updated_at": "2026-03-31T11:00:00+08:00"
   }
@@ -174,7 +173,6 @@
 - `language`
 - `created_at`
 - `updated_at`
-- `visibility`
 - `owner_id`
 
 补充：
@@ -207,7 +205,6 @@
   "title": "JWT middleware",
   "content": "package main\n...",
   "language": "go",
-  "visibility": "public",
   "created_at": "2026-03-31T10:00:00+08:00",
   "updated_at": "2026-03-31T11:00:00+08:00"
 }
@@ -221,7 +218,6 @@
 - `language`
 - `created_at`
 - `updated_at`
-- `visibility`
 - `owner_id`
 
 补充：
@@ -248,8 +244,7 @@
 {
   "title": "JWT middleware",
   "content": "package main\n...",
-  "language": "go",
-  "visibility": "private"
+  "language": "go"
 }
 ```
 
@@ -258,7 +253,6 @@
 - `title`: 必填
 - `content`: 必填
 - `language`: 必填
-- `visibility`: 可选，当前前端只传 `private` 或 `public`
 
 成功响应 `data`：
 
@@ -269,7 +263,6 @@
   "title": "JWT middleware",
   "content": "package main\n...",
   "language": "go",
-  "visibility": "private",
   "created_at": "2026-03-31T10:00:00+08:00",
   "updated_at": "2026-03-31T10:00:00+08:00"
 }
@@ -301,8 +294,7 @@
 {
   "title": "JWT middleware v2",
   "content": "package main\n...",
-  "language": "go",
-  "visibility": "public"
+  "language": "go"
 }
 ```
 
@@ -315,7 +307,6 @@
   "title": "JWT middleware v2",
   "content": "package main\n...",
   "language": "go",
-  "visibility": "public",
   "created_at": "2026-03-31T10:00:00+08:00",
   "updated_at": "2026-03-31T12:00:00+08:00"
 }
@@ -338,7 +329,6 @@ interface Snippet {
   language: string
   created_at: string
   updated_at: string
-  visibility?: 'private' | 'public'
   owner_id?: number
 }
 ```
@@ -346,56 +336,43 @@ interface Snippet {
 说明：
 
 - `id` 当前前端兼容 `string | number`
-- `visibility` 预期值为 `private | public`
 - `owner_id` 用于判断当前用户是否可编辑
 
-## 5. SSO 回跳约定
+## 5. SSO 弹窗授权约定
 
-除了 HTTP API，`go-note` 前端还依赖来自 `user-platform` 登录页的 SSO 回跳协议。
+除了 HTTP API，`go-note` 前端还依赖 GoChat 统一认证前端提供的 SSO 弹窗授权流程。
 
-### 5.1 跳转到 SSO 登录页
+### 5.1 打开 SSO 授权页
 
-前端会构造一个登录地址：
-
-```text
-{SSO_LOGIN_URL}?app_code=go-note&redirect_uri={callbackUrl}
-```
-
-其中回调地址通常为：
+前端会以内嵌 iframe 的形式打开：
 
 ```text
-/auth/callback?state={原始目标路由}
+{SSO_LOGIN_URL去掉末尾/login后的路径前缀}/sso?app_code=go-note&embed=1&opener_origin={当前页面origin}
 ```
 
-### 5.2 登录成功后的回跳参数
-
-`user-platform` 登录成功后，会跳回 `go-note` 的 `/auth/callback`。
-
-Query 参数：
-
-- `user_id`
-- `username`
-- `state`
-- `app_code`（可选）
-- `client_id`（可选）
-
-Hash 参数：
-
-- `access_token`
-- `refresh_token`
-- `token_type`
-
-示例：
+注册流程则打开：
 
 ```text
-/auth/callback?user_id=1001&username=alice&state=%2F#access_token=xxx&refresh_token=yyy&token_type=Bearer
+{SSO_LOGIN_URL去掉末尾/login后的路径前缀}/register?app_code=go-note&embed=1&opener_origin={当前页面origin}
 ```
 
-前端在回调页会完成：
+### 5.2 登录成功后的回传方式
 
-1. 从 Query 和 Hash 中解析用户与 token
+GoChat 统一认证页登录或注册成功后，不再跳回 `/auth/callback`，而是通过 `postMessage` 将认证结果发回调用页。
+
+消息体：
+
+- `type = "sso:auth_result"`
+- `payload.accessToken`
+- `payload.refreshToken`
+- `payload.userId`
+- `payload.username`
+
+前端收到消息后会完成：
+
+1. 校验消息来源 origin/source
 2. 写入本地登录态
-3. 跳回 `state` 指向的页面
+3. 跳回原始 `redirect` 页面
 
 ## 6. 当前前端未接入的接口能力
 
@@ -414,7 +391,6 @@ Hash 参数：
 - 匿名访问公开片段
 - 片段列表分页
 - 片段列表筛选和排序接口
-- 在 `go-note` 应用内直接注册账号
 - 登出接口
 
 ## 7. 联调时建议重点确认
@@ -450,7 +426,6 @@ Hash 参数：
 - `src/views/PasteView.vue`
 - `src/views/SnippetEditorView.vue`
 - `src/views/AuthView.vue`
-- `src/views/SsoCallbackView.vue`
 
 网关：
 

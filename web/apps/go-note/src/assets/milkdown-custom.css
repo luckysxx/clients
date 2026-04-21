@@ -1,0 +1,567 @@
+/* =============================================
+   Milkdown Crepe — Notion/Typora-style overrides
+   Design tokens from DESIGN.md
+   ============================================= */
+
+/* ── CSS variables ── */
+.milkdown {
+  --crepe-color-background: transparent;
+  --crepe-color-surface: #ffffff;
+  --crepe-color-surface-variant: #f6f5f4;
+  --crepe-color-primary: rgba(0, 0, 0, 0.95);
+  --crepe-color-secondary: #615d59;
+  --crepe-color-outline: rgba(0, 0, 0, 0.1);
+  --crepe-color-error: #dd5b00;
+  --crepe-color-inline-code-bg: rgba(0, 0, 0, 0.05);
+
+  --crepe-font-body: inherit;
+  --crepe-font-code: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+
+  --crepe-radius-small: 4px;
+  --crepe-radius-default: 8px;
+  --crepe-radius-large: 12px;
+
+  --crepe-shadow-focus: 0 0 0 2px #097fe8;
+  --crepe-shadow-dropdown:
+    rgba(0, 0, 0, 0.04) 0px 4px 18px,
+    rgba(0, 0, 0, 0.027) 0px 2.025px 7.84688px,
+    rgba(0, 0, 0, 0.02) 0px 0.8px 2.925px,
+    rgba(0, 0, 0, 0.01) 0px 0.175px 1.04062px;
+
+  box-shadow: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+/* ── ProseMirror editor canvas ── */
+.milkdown .ProseMirror {
+  outline: none;
+  caret-color: #097fe8;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.95);
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ── Headings ── */
+.milkdown .ProseMirror h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  color: rgba(0, 0, 0, 0.95);
+  margin: 1.5em 0 0.4em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.milkdown .ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.625px;
+  color: rgba(0, 0, 0, 0.95);
+  margin: 1.4em 0 0.35em;
+}
+.milkdown .ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.25px;
+  color: rgba(0, 0, 0, 0.95);
+  margin: 1.2em 0 0.3em;
+}
+.milkdown .ProseMirror h4,
+.milkdown .ProseMirror h5,
+.milkdown .ProseMirror h6 {
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.95);
+  margin: 1em 0 0.25em;
+}
+
+/* ── Paragraph ── */
+.milkdown .ProseMirror p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.9);
+  margin: 0.4em 0;
+}
+
+/* ── Inline code ── */
+.milkdown .ProseMirror code:not(.cm-line code) {
+  font-family: var(--crepe-font-code);
+  font-size: 0.875em;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.85);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* ── Code blocks (CodeMirror wrapper) ── */
+.milkdown .ProseMirror .milkdown-code-block,
+.milkdown .ProseMirror [data-node-type="code_block"] {
+  position: relative;
+  margin: 1.1em 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #f6f5f4;
+  box-shadow: rgba(0, 0, 0, 0.02) 0px 2px 8px;
+}
+.milkdown .ProseMirror .milkdown-code-block .cm-editor .cm-scroller {
+  overflow-x: auto;
+}
+.milkdown .ProseMirror .milkdown-code-block .cm-editor {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Crepe language picker (top-right floating selector) */
+.milkdown .milkdown-code-block .language-picker,
+.milkdown .milkdown-code-block .tools,
+.milkdown .milkdown-code-block [class*="language"] {
+  font-family: var(--crepe-font-code);
+}
+
+.milkdown .milkdown-code-block button[class*="copy"],
+.milkdown .milkdown-code-block .copy-button,
+.milkdown .milkdown-code-block .copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  height: 24px;
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 6px !important;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #615d59 !important;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.milkdown .milkdown-code-block button[class*="copy"]:hover,
+.milkdown .milkdown-code-block .copy-button:hover,
+.milkdown .milkdown-code-block .copy:hover {
+  background: #f2f9ff !important;
+  color: #097fe8 !important;
+  border-color: rgba(9, 127, 232, 0.3) !important;
+}
+.milkdown .milkdown-code-block button[class*="copy"] svg,
+.milkdown .milkdown-code-block .copy-button svg,
+.milkdown .milkdown-code-block .copy svg {
+  width: 13px;
+  height: 13px;
+  color: currentColor;
+  fill: currentColor;
+}
+
+.milkdown .milkdown-code-block .language-button,
+.milkdown .milkdown-code-block button[class*="language"],
+.milkdown .milkdown-code-block .tools button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px !important;
+  height: 24px;
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 6px !important;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #615d59 !important;
+  letter-spacing: normal;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.milkdown .milkdown-code-block .language-button:hover,
+.milkdown .milkdown-code-block button[class*="language"]:hover,
+.milkdown .milkdown-code-block .tools button:hover {
+  background: #f2f9ff !important;
+  color: #097fe8 !important;
+  border-color: rgba(9, 127, 232, 0.3) !important;
+}
+.milkdown .milkdown-code-block .language-button svg,
+.milkdown .milkdown-code-block button[class*="language"] svg {
+  width: 13px;
+  height: 13px;
+  color: currentColor;
+  fill: currentColor;
+}
+
+/* Language search/list dropdown */
+.milkdown .milkdown-code-block .language-list,
+.milkdown .milkdown-code-block [class*="language-list"] {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow:
+    rgba(0, 0, 0, 0.04) 0px 4px 18px,
+    rgba(0, 0, 0, 0.027) 0px 2.025px 7.85px;
+  padding: 4px;
+  font-family: var(--crepe-font-code);
+  font-size: 13px;
+}
+.milkdown .milkdown-code-block .language-list input,
+.milkdown .milkdown-code-block [class*="language-list"] input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.milkdown .milkdown-code-block .language-list input:focus,
+.milkdown .milkdown-code-block [class*="language-list"] input:focus {
+  border-color: #097fe8;
+  box-shadow: 0 0 0 2px rgba(9, 127, 232, 0.15);
+}
+.milkdown .milkdown-code-block .language-list li,
+.milkdown .milkdown-code-block [class*="language-list"] li {
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.85);
+  list-style: none;
+}
+.milkdown .milkdown-code-block .language-list li:hover,
+.milkdown .milkdown-code-block .language-list li[aria-selected="true"],
+.milkdown .milkdown-code-block [class*="language-list"] li:hover {
+  background: #f6f5f4;
+  color: rgba(0, 0, 0, 0.95);
+}
+
+/* CodeMirror editor inside the block */
+.milkdown .cm-editor {
+  background: #f6f5f4 !important;
+  border-radius: 0 0 10px 10px;
+  font-family: var(--crepe-font-code) !important;
+  font-size: 13.5px !important;
+  line-height: 1.65 !important;
+}
+
+.milkdown .cm-editor .cm-content {
+  padding: 14px 16px !important;
+  font-family: var(--crepe-font-code) !important;
+}
+
+.milkdown .cm-editor .cm-line {
+  font-family: var(--crepe-font-code) !important;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* Hide line-number gutter & active-line gutter highlight */
+.milkdown .cm-editor .cm-gutters {
+  display: none !important;
+}
+.milkdown .cm-editor .cm-activeLineGutter {
+  background: transparent !important;
+}
+
+/* Hide the default CodeMirror border/focus ring */
+.milkdown .cm-editor.cm-focused {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* CodeMirror active line highlight — off, keep surface flat */
+.milkdown .cm-editor .cm-activeLine {
+  background: transparent !important;
+}
+
+/* CodeMirror selection */
+.milkdown .cm-editor .cm-selectionBackground {
+  background: rgba(9, 127, 232, 0.15) !important;
+}
+
+/* ── Tables — Typora-style ── */
+.milkdown .ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  font-size: 15px;
+  line-height: 1.5;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 8px;
+  overflow-x: auto;
+  display: block;
+  border-spacing: 0;
+}
+
+/* Header row */
+.milkdown .ProseMirror table thead tr,
+.milkdown .ProseMirror table tr:first-child {
+  background: #f6f5f4;
+}
+
+.milkdown .ProseMirror table th {
+  padding: 9px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.75);
+  letter-spacing: 0.02em;
+  border-bottom: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+}
+.milkdown .ProseMirror table th:last-child {
+  border-right: none;
+}
+
+/* Body cells */
+.milkdown .ProseMirror table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  border-right: 1px solid rgba(0, 0, 0, 0.07);
+  color: rgba(0, 0, 0, 0.9);
+  vertical-align: top;
+}
+.milkdown .ProseMirror table td:last-child {
+  border-right: none;
+}
+.milkdown .ProseMirror table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Zebra stripe */
+.milkdown .ProseMirror table tbody tr:nth-child(even) td {
+  background: rgba(0, 0, 0, 0.018);
+}
+
+/* Hover row highlight */
+.milkdown .ProseMirror table tbody tr:hover td {
+  background: rgba(9, 127, 232, 0.04);
+}
+
+/* Selected cell */
+.milkdown .ProseMirror table td.selectedCell,
+.milkdown .ProseMirror table th.selectedCell {
+  background: rgba(9, 127, 232, 0.1) !important;
+  outline: 1.5px solid #097fe8;
+  outline-offset: -1px;
+}
+
+/* ── Blockquote ── */
+.milkdown .ProseMirror blockquote {
+  margin: 1em 0;
+  padding: 10px 16px;
+  border-left: 3px solid #097fe8;
+  background: rgba(9, 127, 232, 0.04);
+  border-radius: 0 6px 6px 0;
+  color: #615d59;
+  font-style: normal;
+}
+.milkdown .ProseMirror blockquote p {
+  margin: 0;
+  color: #615d59;
+}
+
+/* ── Horizontal rule ── */
+.milkdown .ProseMirror hr {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 1.8em 0;
+}
+
+/* ── Lists ── */
+.milkdown .ProseMirror ul,
+.milkdown .ProseMirror ol {
+  padding-left: 1.75em;
+  margin: 0.5em 0;
+}
+.milkdown .ProseMirror ul {
+  list-style: disc outside;
+}
+.milkdown .ProseMirror ul ul {
+  list-style: circle outside;
+}
+.milkdown .ProseMirror ul ul ul {
+  list-style: square outside;
+}
+.milkdown .ProseMirror ol {
+  list-style: decimal outside;
+}
+.milkdown .ProseMirror li {
+  margin: 0.25em 0;
+  line-height: inherit;
+  padding-left: 0.25em;
+}
+.milkdown .ProseMirror li::marker {
+  color: rgba(0, 0, 0, 0.85);
+}
+.milkdown .ProseMirror ol li::marker {
+  color: rgba(0, 0, 0, 0.95);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.milkdown .ProseMirror li > p {
+  margin: 0;
+  line-height: inherit;
+}
+.milkdown .ProseMirror li > p:first-child {
+  margin-top: 0 !important;
+}
+
+/* Crepe renders bullets as custom <span> elements — force dark color */
+.milkdown .ProseMirror li .list-marker,
+.milkdown .ProseMirror li [class*="list-marker"],
+.milkdown .ProseMirror li [class*="bullet"],
+.milkdown .ProseMirror li .label,
+.milkdown .ProseMirror li > span:first-child {
+  color: rgba(0, 0, 0, 0.95) !important;
+  opacity: 1 !important;
+  transform: translateY(6.5px) !important;
+}
+.milkdown .ProseMirror li .list-marker svg,
+.milkdown .ProseMirror li [class*="list-marker"] svg,
+.milkdown .ProseMirror li [class*="bullet"] svg {
+  fill: rgba(0, 0, 0, 0.95) !important;
+  color: rgba(0, 0, 0, 0.95) !important;
+  opacity: 1 !important;
+}
+
+/* Task list: hide bullet, render custom checkbox */
+.milkdown .ProseMirror li.task-list-item,
+.milkdown .ProseMirror li[data-task-list-item],
+.milkdown .ProseMirror li[data-checked],
+.milkdown .ProseMirror li:has(> label > input[type="checkbox"]),
+.milkdown .ProseMirror li:has(> input[type="checkbox"]) {
+  list-style: none;
+  padding-left: 0;
+}
+.milkdown .ProseMirror li input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0 8px 0 0;
+  vertical-align: -3px;
+  border: 1.5px solid rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.milkdown .ProseMirror li input[type="checkbox"]:hover {
+  border-color: #097fe8;
+}
+.milkdown .ProseMirror li input[type="checkbox"]:checked {
+  background: #0075de;
+  border-color: #0075de;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'><path d='M6.1 10.7 3.4 8l-1 1 3.7 3.7L13.6 5.2l-1-1z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px;
+}
+
+/* ── Image block ── */
+.milkdown-image-block,
+.milkdown .ProseMirror [data-node-type="image"] {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 1em 0;
+  display: block;
+  transition: box-shadow 0.15s ease;
+}
+.milkdown-image-block:hover,
+.milkdown .ProseMirror [data-node-type="image"]:hover {
+  box-shadow:
+    rgba(0, 0, 0, 0.04) 0px 4px 18px,
+    rgba(0, 0, 0, 0.027) 0px 2.025px 7.85px;
+}
+
+/* ── Slash menu (BlockEdit) ── */
+.milkdown-block-edit,
+[data-milkdown-block-edit] {
+  background: rgba(255, 255, 255, 0.97) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 10px !important;
+  box-shadow:
+    rgba(0, 0, 0, 0.04) 0px 4px 18px,
+    rgba(0, 0, 0, 0.027) 0px 2.025px 7.85px,
+    rgba(0, 0, 0, 0.02) 0px 0.8px 2.93px !important;
+  padding: 4px !important;
+  overflow: hidden;
+}
+
+.milkdown-block-edit [role="option"],
+.milkdown-block-edit [data-milkdown-menu-item] {
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.milkdown-block-edit [role="option"]:hover,
+.milkdown-block-edit [data-milkdown-menu-item]:hover,
+.milkdown-block-edit [role="option"][aria-selected="true"] {
+  background: #f6f5f4;
+}
+
+/* ── Floating toolbar ── */
+.milkdown-toolbar,
+[data-milkdown-toolbar] {
+  background: rgba(255, 255, 255, 0.97) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  box-shadow:
+    rgba(0, 0, 0, 0.04) 0px 4px 18px,
+    rgba(0, 0, 0, 0.02) 0px 1px 4px !important;
+  padding: 3px 4px !important;
+  gap: 2px !important;
+}
+
+.milkdown-toolbar button,
+[data-milkdown-toolbar] button {
+  border-radius: 5px;
+  padding: 4px 6px;
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 13px;
+  transition: background 0.1s, color 0.1s;
+}
+.milkdown-toolbar button:hover,
+[data-milkdown-toolbar] button:hover {
+  background: #f6f5f4;
+  color: rgba(0, 0, 0, 0.95);
+}
+.milkdown-toolbar button[data-active="true"],
+[data-milkdown-toolbar] button[data-active="true"] {
+  background: rgba(9, 127, 232, 0.1);
+  color: #097fe8;
+}
+
+/* ── Focus selection ── */
+.milkdown .ProseMirror ::selection {
+  background: rgba(9, 127, 232, 0.15);
+}
+
+/* ── Readonly mode: hide Crepe block handles/menus and empty list items ── */
+.milkdown-readonly .milkdown [data-milkdown-block-handle],
+.milkdown-readonly .milkdown [class*="block-handle"],
+.milkdown-readonly .milkdown milkdown-block-handle,
+.milkdown-readonly .milkdown [data-slash-menu],
+.milkdown-readonly .milkdown [class*="slash-menu"] {
+  display: none !important;
+}
+
+.milkdown-readonly .milkdown .ProseMirror li:has(> p:only-child:empty),
+.milkdown-readonly .milkdown .ProseMirror li:empty,
+.milkdown-readonly .milkdown .ProseMirror li:has(> p:only-child > br.ProseMirror-trailingBreak:only-child) {
+  display: none;
+}

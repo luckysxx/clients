@@ -5,7 +5,6 @@ import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -14,11 +13,9 @@ export default defineConfig({
     vueDevTools(),
     AutoImport({
       dts: './src/auto-imports.d.ts',
-      resolvers: [ElementPlusResolver()],
     }),
     Components({
       dts: './src/components.d.ts',
-      resolvers: [ElementPlusResolver()],
     }),
   ],
   resolve: {
@@ -28,6 +25,7 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    strictPort: true,
     proxy: {
       '/api/v1': {
         target: 'http://localhost:8000', // 统一走 API 网关

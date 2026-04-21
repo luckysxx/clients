@@ -1,13 +1,436 @@
-@import './base.css';
+@import "tailwindcss";
+@import "./base.css";
 
-#app {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  font-weight: normal;
+/* ──────────────────────────────────────────────────────────────
+ * Notion Design System — Tailwind v4 Tokens
+ * 颜色 / 阴影 / 半径 / 字号 全部在这里收口，业务侧只用 token 名。
+ * 参考：DESIGN.md（docs 根目录）
+ * ────────────────────────────────────────────────────────────── */
+@theme {
+  /* ── Font stack ── */
+  --font-sans:
+    'Inter', -apple-system, system-ui, 'Segoe UI', Helvetica,
+    'Apple Color Emoji', Arial, 'Segoe UI Emoji', 'Segoe UI Symbol';
+
+  /* ── Primary ── */
+  --color-ink: rgba(0, 0, 0, 0.95);          /* 正文/标题：近黑，不是纯黑 */
+  --color-ink-soft: rgba(0, 0, 0, 0.9);       /* 输入框等弱化正文 */
+  --color-canvas: #ffffff;                    /* 页面底色 */
+  --color-notion-blue: #0075de;               /* 唯一高饱和强调色 */
+  --color-notion-blue-active: #005bab;        /* 按下态 */
+
+  /* ── Warm neutrals（带黄棕底的暖灰） ── */
+  --color-warm-50: #f6f5f4;                   /* 节区底色 */
+  --color-warm-300: #a39e98;                  /* 占位/禁用 */
+  --color-warm-500: #615d59;                  /* 副文本 */
+  --color-warm-900: #31302e;                  /* 深色面板底 */
+
+  /* ── Semantic accent ── */
+  --color-accent-teal: #2a9d99;
+  --color-accent-green: #1aae39;
+  --color-accent-orange: #dd5b00;
+  --color-accent-pink: #ff64c8;
+  --color-accent-purple: #391c57;
+  --color-accent-brown: #523410;
+
+  /* ── Interactive ── */
+  --color-focus: #097fe8;
+  --color-badge-bg: #f2f9ff;
+  --color-badge-ink: #097fe8;
+
+  /* ── Lines / Surfaces ── */
+  --color-whisper: rgba(0, 0, 0, 0.1);        /* 低语边框 */
+  --color-hair: #dddddd;                       /* 输入框边 */
+  --color-hover: rgba(0, 0, 0, 0.05);
+  --color-hover-strong: rgba(0, 0, 0, 0.08);
+
+  /* ── Radius ── */
+  --radius-xs: 4px;    /* 按钮/输入 */
+  --radius-sm: 5px;
+  --radius-md: 8px;    /* 下拉/小卡片 */
+  --radius-lg: 12px;   /* 标准卡片 */
+  --radius-xl: 16px;   /* 特写卡片 */
+
+  /* ── Shadows（多层累积、弱不透明度） ── */
+  --shadow-soft:
+    rgba(0, 0, 0, 0.04) 0px 4px 18px,
+    rgba(0, 0, 0, 0.027) 0px 2.025px 7.84688px,
+    rgba(0, 0, 0, 0.02) 0px 0.8px 2.925px,
+    rgba(0, 0, 0, 0.01) 0px 0.175px 1.04062px;
+  --shadow-deep:
+    rgba(0, 0, 0, 0.01) 0px 1px 3px,
+    rgba(0, 0, 0, 0.02) 0px 3px 7px,
+    rgba(0, 0, 0, 0.02) 0px 7px 15px,
+    rgba(0, 0, 0, 0.04) 0px 14px 28px,
+    rgba(0, 0, 0, 0.05) 0px 23px 52px;
+
+  /* ── Dark section tokens (Landing Page 暗色深潜区) ── */
+  --color-dark-bg: #18181b;                   /* 主暗底 */
+  --color-dark-bg-alt: #1c1c1f;               /* 稍浅暗底 */
+  --color-dark-card: #232326;                  /* 暗卡片 */
+  --color-dark-border: rgba(255,255,255,0.08); /* 暗边框 */
+  --color-dark-border-accent: rgba(59,130,246,0.25); /* 蓝色高亮边 */
+  --color-dark-text: #fafafa;                  /* 暗底正文 */
+  --color-dark-text-muted: #a1a1aa;            /* 暗底副文本 */
+  --color-dark-text-dim: #71717a;              /* 暗底最弱文本 */
 }
 
-a {
-  text-decoration: none;
-  transition: 0.4s;
+/* ──────────────────────────────────────────────────────────────
+ * Base typography
+ * ────────────────────────────────────────────────────────────── */
+@layer base {
+  #app {
+    min-height: 100vh;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    letter-spacing: normal;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-feature-settings: "locl";
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-notion-blue) 20%, transparent);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Typography utilities — 压缩感的标题阶梯
+ * Notion 的招牌是「字号越大、字距越负、行高越紧」
+ * ────────────────────────────────────────────────────────────── */
+@utility text-display {
+  font-size: 4rem;           /* 64px */
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -2.125px;
+  font-feature-settings: "lnum", "locl";
+}
+
+@utility text-display-sm {
+  font-size: 3.375rem;       /* 54px */
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -1.875px;
+  font-feature-settings: "lnum", "locl";
+}
+
+@utility text-h1 {
+  font-size: 3rem;           /* 48px */
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -1.5px;
+  font-feature-settings: "lnum", "locl";
+}
+
+@utility text-h2 {
+  font-size: 2.5rem;         /* 40px */
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+@utility text-h3 {
+  font-size: 1.625rem;       /* 26px */
+  font-weight: 700;
+  line-height: 1.23;
+  letter-spacing: -0.625px;
+}
+
+@utility text-h4 {
+  font-size: 1.375rem;       /* 22px */
+  font-weight: 700;
+  line-height: 1.27;
+  letter-spacing: -0.25px;
+}
+
+@utility text-body-lg {
+  font-size: 1.25rem;        /* 20px */
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.125px;
+}
+
+@utility text-nav {
+  font-size: 0.9375rem;      /* 15px */
+  font-weight: 600;
+  line-height: 1.33;
+}
+
+@utility text-caption {
+  font-size: 0.875rem;       /* 14px */
+  font-weight: 500;
+  line-height: 1.43;
+}
+
+@utility text-badge {
+  font-size: 0.75rem;        /* 12px */
+  font-weight: 600;
+  line-height: 1.33;
+  letter-spacing: 0.125px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Shadow utilities（别名到 token）
+ * ────────────────────────────────────────────────────────────── */
+@utility shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+@utility shadow-deep {
+  box-shadow: var(--shadow-deep);
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Component classes — 业务组件的语义入口
+ * 都改用 token，禁止直接写 hex
+ * ────────────────────────────────────────────────────────────── */
+@layer components {
+  /* ── Surfaces ── */
+  .surface-panel {
+    border: 1px solid var(--color-whisper);
+    background: var(--color-canvas);
+    border-radius: var(--radius-lg);
+  }
+
+  .surface-muted {
+    border: 1px solid var(--color-whisper);
+    background: var(--color-warm-50);
+    border-radius: var(--radius-lg);
+  }
+
+  /* ── Buttons ── */
+  .ui-button {
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded border border-transparent px-3 text-[15px] font-[600] transition-all duration-150 ease-in-out disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .ui-button svg,
+  .ui-icon-button svg,
+  .group-tree-button svg,
+  .group-tree-toggle svg,
+  button svg {
+    @apply h-4 w-4 shrink-0;
+  }
+
+  .ui-button-primary {
+    background: var(--color-notion-blue);
+    color: var(--color-canvas);
+    outline: none;
+  }
+  .ui-button-primary:hover {
+    background: var(--color-notion-blue-active);
+  }
+  .ui-button-primary:active {
+    transform: scale(0.98);
+  }
+  .ui-button-primary:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-focus);
+  }
+
+  .ui-button-ghost {
+    background: transparent;
+    color: var(--color-ink);
+  }
+  .ui-button-ghost:hover {
+    background: var(--color-hover);
+  }
+  .ui-button-ghost:active {
+    transform: scale(0.98);
+  }
+
+  .ui-button-secondary {
+    background: var(--color-hover);
+    color: var(--color-ink);
+  }
+  .ui-button-secondary:hover {
+    background: var(--color-hover-strong);
+  }
+  .ui-button-secondary:active {
+    transform: scale(0.98);
+  }
+
+  .ui-button-danger {
+    background: color-mix(in srgb, var(--color-accent-orange) 10%, transparent);
+    color: var(--color-accent-orange);
+  }
+  .ui-button-danger:hover {
+    background: color-mix(in srgb, var(--color-accent-orange) 20%, transparent);
+  }
+
+  .ui-button-disabled {
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--color-warm-300);
+    box-shadow: none;
+  }
+
+  .ui-icon-button {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded border border-transparent bg-transparent transition-all duration-150 ease-in-out active:scale-[0.98];
+    color: var(--color-warm-500);
+  }
+  .ui-icon-button:hover {
+    background: var(--color-hover);
+    color: var(--color-ink);
+  }
+
+  /* ── Form controls ── */
+  .ui-input {
+    @apply h-9 w-full rounded px-3 text-sm outline-none transition-all duration-150 ease-in-out;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    border: 1px solid var(--color-hair);
+  }
+  .ui-input::placeholder { color: var(--color-warm-300); }
+  .ui-input:focus {
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 1px var(--color-focus);
+  }
+
+  .ui-textarea {
+    @apply min-h-40 w-full rounded px-3 py-2 text-sm outline-none transition-all duration-150 ease-in-out;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    border: 1px solid var(--color-hair);
+  }
+  .ui-textarea::placeholder { color: var(--color-warm-300); }
+  .ui-textarea:focus {
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 1px var(--color-focus);
+  }
+
+  .ui-label {
+    @apply mb-1.5 block text-xs font-[600];
+    color: var(--color-warm-500);
+  }
+
+  /* ── Pill badges ── */
+  .ui-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[12px] font-[600] tracking-[0.125px] border border-transparent;
+    background: var(--color-badge-bg);
+    color: var(--color-badge-ink);
+  }
+
+  .ui-chip-muted {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[12px] font-[600] tracking-[0.125px];
+    background: var(--color-warm-50);
+    color: var(--color-warm-500);
+    border: 1px solid var(--color-whisper);
+  }
+
+  /* ── Select ── */
+  .ui-select-trigger {
+    @apply inline-flex h-9 w-full items-center justify-between rounded px-3 text-sm outline-none transition-all duration-150 ease-in-out;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    border: 1px solid var(--color-hair);
+  }
+  .ui-select-trigger::placeholder { color: var(--color-warm-300); }
+  .ui-select-trigger:focus { border-color: var(--color-focus); }
+
+  .ui-select-content {
+    @apply z-50 min-w-48 overflow-hidden rounded-[8px] p-1 shadow-deep;
+    background: var(--color-canvas);
+    border: 1px solid var(--color-whisper);
+  }
+
+  /* ── Dropdown ── */
+  .ui-dropdown-content {
+    @apply z-50 min-w-48 overflow-hidden rounded-[8px] p-1 shadow-deep;
+    background: var(--color-canvas);
+    border: 1px solid var(--color-whisper);
+  }
+
+  .ui-dropdown-item {
+    @apply flex cursor-pointer select-none items-center gap-2 rounded-[4px] px-2.5 py-1.5 text-sm outline-none transition-colors;
+    color: var(--color-ink);
+  }
+  .ui-dropdown-item:hover,
+  .ui-dropdown-item[data-highlighted] {
+    background: var(--color-hover);
+  }
+
+  .ui-dropdown-separator {
+    @apply mx-1 my-1 h-px;
+    background: var(--color-whisper);
+  }
+
+  .ui-select-item {
+    @apply relative flex cursor-pointer select-none items-center rounded-[4px] px-2.5 py-1.5 text-sm outline-none transition-colors;
+    color: var(--color-ink);
+  }
+  .ui-select-item:hover,
+  .ui-select-item[data-highlighted] {
+    background: var(--color-hover);
+  }
+
+  /* ── Dialog / Modal ── */
+  .dialog-overlay {
+    @apply fixed inset-0 z-40 backdrop-blur-sm;
+    background: rgba(255, 255, 255, 0.6);
+  }
+
+  .dialog-content {
+    @apply fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-[12px] p-6 shadow-deep outline-none;
+    background: var(--color-canvas);
+    border: 1px solid var(--color-whisper);
+  }
+
+  /* ── Sidebar group tree ── */
+  .group-tree-button {
+    @apply flex w-full items-center justify-between rounded-[4px] py-1 pl-1.5 pr-2 text-[14px] transition-all duration-150 ease-in-out;
+    color: var(--color-ink);
+  }
+  .group-tree-button:hover {
+    background: var(--color-hover);
+  }
+
+  .group-tree-button-active {
+    background: var(--color-hover);
+    font-weight: 500;
+  }
+
+  .group-tree-toggle {
+    @apply inline-flex h-5 w-5 items-center justify-center rounded transition-colors;
+    color: var(--color-warm-300);
+  }
+  .group-tree-toggle:hover {
+    background: var(--color-hover-strong);
+    color: var(--color-warm-500);
+  }
+
+  .group-tree-count {
+    @apply px-1 text-[12px];
+    color: var(--color-warm-300);
+  }
+
+  /* ── Thin scrollbar ── */
+  .app-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
+
+  .app-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 999px;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .app-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }

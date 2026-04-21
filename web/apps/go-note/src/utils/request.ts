@@ -1,17 +1,15 @@
 import axios, { type AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios'
-import { ElMessage } from 'element-plus'
 import {
   applyBearerToken,
+  recoverAppSessionFromRefreshOrSso,
   createTokenRefreshQueue,
   isAuthMutationRequest,
-  normalizeRefreshTokens,
-  type RefreshTokenPayload,
   type RetryableRequestConfigLike,
 } from '@clients/auth'
-import { getCurrentLocationPath } from '@clients/shared'
+import { buildAuthAppLoginPath, getCurrentLocationPath } from '@clients/shared'
 import { type ApiEnvelope, getHttpErrorMessage, unwrapApiEnvelope } from '@clients/request'
+import { toast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
-import { buildSsoLoginUrl } from '@/router'
 
 // 1. 创建 axios 实例
 const service = axios.create({
@@ -43,29 +41,46 @@ service.interceptors.request.use(
 
 const refreshQueue = createTokenRefreshQueue()
 
+function redirectToAuthWithReturnPath(): void {
+  window.location.replace(buildAuthAppLoginPath({
+    appCode: 'go-note',
+    redirectPath: getCurrentLocationPath(),
+  }))
+}
+
+async function recoverAuthSession(): Promise<string> {
+  const authStore = useAuthStore()
+  return recoverAppSessionFromRefreshOrSso({
+    appCode: 'go-note',
+    authStore,
+  })
+}
+
 // 3. 响应拦截器 (Response Interceptor)
 service.interceptors.response.use(
   (response) => {
     try {
       return unwrapApiEnvelope(response.data as ApiEnvelope<unknown>) as unknown as AxiosResponse
     } catch (error) {
-      ElMessage.error(getHttpErrorMessage(error))
+      const requestUrl = response.config?.url || ''
+      if (!isAuthMutationRequest(requestUrl)) {
+        toast.error(getHttpErrorMessage(error))
+      }
       return Promise.reject(error)
     }
   },
   async (error: AxiosError<{ msg?: string; error?: string }>) => {
     // 超出 2xx 范围的状态码都会触发这里（网络错误、404、500等）
-    console.error('请求出错:', error)
 
     const authStore = useAuthStore()
     const originalRequest = (error.config || {}) as RetryableRequestConfigLike
     const requestUrl = originalRequest.url || ''
 
     if (error.response?.status === 401 && !isAuthMutationRequest(requestUrl)) {
-      if (originalRequest._retry || !authStore.refreshToken) {
+      if (originalRequest._retry) {
         authStore.clearAuth()
-        ElMessage.error('登录状态已失效，请重新登录')
-        window.location.href = buildSsoLoginUrl(getCurrentLocationPath())
+        toast.error('登录状态已失效，请重新登录')
+        redirectToAuthWithReturnPath()
         return Promise.reject(new Error('登录状态已失效，请重新登录'))
       }
 
@@ -80,31 +95,28 @@ service.interceptors.response.use(
       refreshQueue.startRefreshing()
 
       try {
-        const refreshResponse = await axios.post<ApiEnvelope<RefreshTokenPayload>>('/api/v1/users/refresh', {
-          refresh_token: authStore.refreshToken,
-        })
-        const tokens = normalizeRefreshTokens(refreshResponse.data.data ?? {}, authStore.refreshToken)
-
-        authStore.updateTokens(tokens.accessToken, tokens.refreshToken)
-        refreshQueue.resolve(tokens.accessToken)
-        applyBearerToken(originalRequest, tokens.accessToken)
+        const recoveredToken = await recoverAuthSession()
+        refreshQueue.resolve(recoveredToken)
+        applyBearerToken(originalRequest, recoveredToken)
 
         return service(originalRequest as AxiosRequestConfig)
       } catch (refreshError) {
         authStore.clearAuth()
         const refreshMessage = new Error(getHttpErrorMessage(refreshError))
         refreshQueue.reject(refreshMessage)
-        ElMessage.error('登录状态已失效，请重新登录')
-        window.location.href = buildSsoLoginUrl(getCurrentLocationPath())
+        toast.error('登录状态已失效，请重新登录')
+        redirectToAuthWithReturnPath()
         return Promise.reject(refreshMessage)
       } finally {
         refreshQueue.finishRefreshing()
       }
     }
 
-    // 统一弹出错误提示 (过滤掉刷新 token 时弹出的重复错误消息)
-    if (error.response?.status !== 401) {
-      ElMessage.error(getHttpErrorMessage(error, '网络请求失败，请稍后重试'))
+    // 统一弹出错误提示 (过滤掉刷新 token 时弹出的重复错误消息；
+    // 调用方可通过 config.skipErrorToast 关闭自动 toast，用于「404 代表业务占位态」等场景)
+    const skipToast = (originalRequest as AxiosRequestConfig & { skipErrorToast?: boolean }).skipErrorToast
+    if (error.response?.status !== 401 && !skipToast) {
+      toast.error(getHttpErrorMessage(error, '网络请求失败，请稍后重试'))
     }
 
     return Promise.reject(error)

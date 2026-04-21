@@ -1,3 +1,5 @@
+import { getAppConfig } from './app-config'
+
 export function readSingleQueryValue(value: unknown): string {
   if (Array.isArray(value)) {
     return typeof value[0] === 'string' ? value[0] : ''
@@ -8,6 +10,27 @@ export function readSingleQueryValue(value: unknown): string {
 
 export function getCurrentLocationPath(): string {
   return `${window.location.pathname}${window.location.search}${window.location.hash}`
+}
+
+export interface AuthAppLoginOptions {
+  appCode: string
+  intent?: 'login' | 'register'
+  redirectPath?: string
+}
+
+export function buildAuthAppLoginPath(options: AuthAppLoginOptions): string {
+  const target = new URL(getAppConfig().sso_login_url)
+  target.searchParams.set('app_code', options.appCode)
+
+  if (options.intent) {
+    target.searchParams.set('intent', options.intent)
+  }
+
+  if (options.redirectPath) {
+    target.searchParams.set('redirect', normalizeInternalPath(options.redirectPath, '/'))
+  }
+
+  return target.toString()
 }
 
 export function normalizeInternalPath(candidate: string, fallback = '/'): string {
@@ -29,25 +52,4 @@ export function normalizeInternalPath(candidate: string, fallback = '/'): string
 
     return fallback
   }
-}
-
-interface BuildClientSsoLoginUrlOptions {
-  ssoLoginUrl: string
-  appCode: string
-  redirectPath: string
-  callbackPath?: string
-  origin?: string
-}
-
-export function buildClientSsoLoginUrl(options: BuildClientSsoLoginUrlOptions): string {
-  const callbackUrl = new URL(options.callbackPath || '/auth/callback', options.origin || window.location.origin)
-  const normalizedRedirect = normalizeInternalPath(options.redirectPath, '/')
-
-  callbackUrl.searchParams.set('state', normalizedRedirect)
-
-  const ssoUrl = new URL(options.ssoLoginUrl)
-  ssoUrl.searchParams.set('app_code', options.appCode)
-  ssoUrl.searchParams.set('redirect_uri', callbackUrl.toString())
-
-  return ssoUrl.toString()
 }

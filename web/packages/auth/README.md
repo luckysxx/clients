@@ -11,8 +11,8 @@
 
 适用范围：
 
-- `apps/user-platform`
 - `apps/go-note`
+- `apps/go-chat`
 - 未来其他需要统一登录态的 Web 应用
 
 如果某段认证逻辑只服务单一 app，先不要急着放进这里。

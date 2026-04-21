@@ -1,5 +1,12 @@
-import axios from 'axios'
-import { type ApiEnvelope } from '@clients/request'
+import { logoutAppSession } from '@clients/auth'
+import {
+  PHONE_AUTH_SEND_CODE_PATH,
+  PHONE_AUTH_ENTRY_PATH,
+  type PhoneAuthSendCodeRequest,
+  type PhoneAuthSendCodeResponse,
+  type PhoneAuthEntryRequest,
+  type PhoneAuthEntryResponse,
+} from '@clients/shared'
 import request from '@/utils/request'
 
 export interface User {
@@ -44,7 +51,39 @@ export interface LogoutResponse {
   success: boolean
 }
 
-type LogoutEnvelope = ApiEnvelope<null>
+export interface ChangePasswordRequest {
+  old_password: string
+  new_password: string
+}
+
+export interface ChangePasswordResponse {
+  user_id: number
+  message: string
+}
+
+export interface SetPasswordRequest {
+  new_password: string
+}
+
+export interface SetPasswordResponse {
+  user_id: number
+  message: string
+}
+
+export interface BindEmailRequest {
+  email: string
+}
+
+export interface BindEmailResponse {
+  user_id: number
+  email: string
+  message: string
+}
+
+export interface LogoutAllSessionsResponse {
+  user_id: number
+  message: string
+}
 
 type RawLoginResponse = Partial<{
   token: string
@@ -127,17 +166,6 @@ const normalizeRefreshTokenResponse = (raw: RawRefreshTokenResponse): RefreshTok
   }
 }
 
-export const getOrCreateDeviceID = () => {
-  let deviceID = localStorage.getItem('device_id')
-
-  if (!deviceID) {
-    deviceID = crypto.randomUUID()
-    localStorage.setItem('device_id', deviceID)
-  }
-
-  return deviceID
-}
-
 // 用户登录
 // 对应后端: POST /api/v1/users/login
 export const login = (data: LoginRequest) => {
@@ -162,23 +190,52 @@ export const refreshToken = (refreshToken: string) => {
 
 // 退出登录
 // 对应网关: POST /api/v1/users/logout
-// 说明: 当前网关成功时返回 data=null，因此这里使用原生 axios 处理 envelope。
 export const logout = async (accessToken: string) => {
-  const response = await axios.post<LogoutEnvelope>(
-    '/api/v1/users/logout',
-    { device_id: getOrCreateDeviceID() },
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  )
-
-  if (response.data.code !== 200) {
-    throw new Error(response.data.msg || '退出登录失败')
-  }
+  await logoutAppSession({ accessToken, appCode: 'go-note' })
 
   return {
     success: true,
   }
+}
+
+// ── 手机号单入口 API ──
+
+// 发送手机验证码
+// 对应后端: POST /api/v1/users/phone-code/send
+export const sendPhoneCode = (data: PhoneAuthSendCodeRequest) => {
+  return request
+    .post<unknown, PhoneAuthSendCodeResponse>(PHONE_AUTH_SEND_CODE_PATH, data)
+}
+
+// 手机号登录 / 自动注册
+// 对应后端: POST /api/v1/users/phone-entry
+export const phoneEntry = (data: PhoneAuthEntryRequest) => {
+  return request
+    .post<unknown, PhoneAuthEntryResponse>(PHONE_AUTH_ENTRY_PATH, data)
+}
+
+// ── 用户安全能力 ──
+
+// 修改密码
+// 对应后端: POST /api/v1/users/password/change
+export const changePassword = (data: ChangePasswordRequest) => {
+  return request.post<unknown, ChangePasswordResponse>('/api/v1/users/password/change', data)
+}
+
+// 设置密码
+// 对应后端: POST /api/v1/users/password/set
+export const setPassword = (data: SetPasswordRequest) => {
+  return request.post<unknown, SetPasswordResponse>('/api/v1/users/password/set', data)
+}
+
+// 绑定邮箱
+// 对应后端: POST /api/v1/users/email/bind
+export const bindEmail = (data: BindEmailRequest) => {
+  return request.post<unknown, BindEmailResponse>('/api/v1/users/email/bind', data)
+}
+
+// 退出全部设备
+// 对应后端: POST /api/v1/users/logout-all
+export const logoutAll = () => {
+  return request.post<unknown, LogoutAllSessionsResponse>('/api/v1/users/logout-all')
 }

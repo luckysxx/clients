@@ -1,31 +1,62 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { resolveAuthRouteAccess } from '@clients/auth'
-import { buildClientSsoLoginUrl } from '@clients/shared'
 import HomeView from '../views/HomeView.vue'
 import { useAuthStore } from '@/stores/auth'
-
-// user-platform SSO 登录页地址
-const SSO_LOGIN_URL = import.meta.env.VITE_SSO_LOGIN_URL || 'http://localhost:5173/login'
+import { buildAuthAppLoginPath } from '@clients/shared'
+import { bootstrapAppSessionFromSso } from '@clients/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
+      name: 'landing',
+      component: () => import('../views/LandingView.vue'),
+    },
+    {
+      path: '/auth',
+      redirect: '/',
+    },
+    {
+      path: '/workspace',
+      name: 'workspace',
       component: HomeView,
       meta: { requiresAuth: true },
     },
     {
-      path: '/auth',
-      name: 'auth',
-      component: () => import('../views/AuthView.vue'),
-      meta: { guestOnly: true },
+      path: '/workspace/organize',
+      name: 'workspace-organize',
+      component: () => import('../views/OrganizeView.vue'),
+      meta: { requiresAuth: true },
     },
     {
-      path: '/auth/callback',
-      name: 'sso-callback',
-      component: () => import('../views/SsoCallbackView.vue'),
+      path: '/workspace/start',
+      name: 'workspace-start',
+      component: () => import('../views/StartView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/workspace/groups',
+      name: 'workspace-groups',
+      component: () => import('../views/GroupsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/workspace/favorites',
+      name: 'workspace-favorites',
+      component: HomeView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/workspace/trash',
+      name: 'workspace-trash',
+      component: HomeView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/workspace/drafts',
+      name: 'workspace-drafts',
+      component: () => import('../views/DraftsView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/snippets/new',
@@ -36,7 +67,7 @@ const router = createRouter({
     {
       path: '/snippets/:id',
       name: 'snippet-detail',
-      component: () => import('../views/PasteView.vue'),
+      component: () => import('../views/DocumentView.vue'),
       meta: { requiresAuth: true },
     },
     {
@@ -50,39 +81,64 @@ const router = createRouter({
       redirect: (to) => ({ path: `/snippets/${to.params.id as string}` }),
     },
     {
+      path: '/s/:token',
+      name: 'share-public',
+      component: () => import('../views/SharePublicView.vue'),
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/SettingsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/about',
       name: 'about',
       component: () => import('../views/AboutView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/workspace',
     },
   ],
 })
 
-/**
- * 构建 SSO 登录跳转 URL
- * 携带 app_code 和 redirect_uri，登录成功后 user-platform 会带 token 跳回 callback
- */
-function buildSsoLoginUrl(redirectAfterLogin: string): string {
-  return buildClientSsoLoginUrl({
-    ssoLoginUrl: SSO_LOGIN_URL,
-    appCode: 'go-note',
-    redirectPath: redirectAfterLogin,
-    callbackPath: '/auth/callback',
-  })
-}
-
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
   if (!authStore.hydrated) {
     authStore.initFromStorage()
   }
 
-  return resolveAuthRouteAccess({
-    to,
-    isAuthenticated: authStore.isAuthenticated,
-    authRoute: '/auth',
-    authenticatedRoute: '/',
-  })
+  if (to.meta?.requiresAuth && !authStore.isAuthenticated) {
+    if (authStore.isSsoSuppressed) {
+      return {
+        path: '/',
+        query: {
+          passport: 'login',
+          redirect: to.fullPath,
+        },
+      }
+    }
+
+    try {
+      const swapped = await bootstrapAppSessionFromSso({
+        appCode: 'go-note',
+        authStore,
+      })
+      if (swapped) return true
+    } catch (e) {
+      console.warn('go-note lazy sso failed', e)
+    }
+
+    window.location.replace(buildAuthAppLoginPath({
+      appCode: 'go-note',
+      redirectPath: to.fullPath,
+    }))
+    return false
+  }
+
+  return true
 })
 
-export { buildSsoLoginUrl }
 export default router
